@@ -1,21 +1,23 @@
-//
-//  ContentView.swift
-//  10BucksClub
-//
-//  Created by Matthew Chew on 23/12/24.
-//
-
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            SessionsView()
+                .tabItem {
+                    Label("Sessions", systemImage: "list.bullet")
+                }
+
+            WaitlistView()
+                .tabItem {
+                    Label("Waitlist", systemImage: "person.fill.badge.plus")
+                }
+            
+            AllPlayersView()
+                .tabItem {
+                    Label("All Players", systemImage: "person.3.fill")
+                }
         }
-        .padding()
     }
 }
 
