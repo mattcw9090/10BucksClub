@@ -58,7 +58,7 @@ struct SeasonAccordionView: View {
             content: {
                 if sessionCount > 0 {
                     ForEach(1...sessionCount, id: \ .self) { sessionNumber in
-                        NavigationLink(destination: SessionDetailView(sessionNumber: sessionNumber)) {
+                        NavigationLink(destination: SessionDetailView(seasonNumber: seasonNumber, sessionNumber: sessionNumber)) {
                             HStack {
                                 Image(systemName: "calendar.circle.fill")
                                 Text("Session \(sessionNumber)")

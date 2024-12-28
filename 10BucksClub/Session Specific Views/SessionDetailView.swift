@@ -10,6 +10,7 @@ enum DetailSegment: String, CaseIterable, Identifiable {
 }
 
 struct SessionDetailView: View {
+    let seasonNumber: Int
     let sessionNumber: Int
     
     @State private var selectedSegment: DetailSegment = .teams
@@ -28,7 +29,7 @@ struct SessionDetailView: View {
             
             switch selectedSegment {
             case .teams:
-                TeamsView()
+                TeamsView(seasonNumber: seasonNumber, sessionNumber: sessionNumber)
             case .draws:
                 DrawsView()
             case .results:
@@ -39,10 +40,10 @@ struct SessionDetailView: View {
             
             Spacer()
         }
-        .navigationTitle("Session \(sessionNumber)")
+        .navigationTitle("Season \(seasonNumber) Session \(sessionNumber)")
     }
 }
 
 #Preview {
-    SessionDetailView(sessionNumber: 3)
+    SessionDetailView(seasonNumber: 2, sessionNumber: 3)
 }

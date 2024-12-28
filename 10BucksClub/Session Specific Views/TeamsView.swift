@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct TeamsView: View {
+    let seasonNumber: Int
+    let sessionNumber: Int
+    
     var body: some View {
         NavigationView {
             List {
@@ -84,5 +87,5 @@ struct TeamMemberRow: View {
 }
 
 #Preview {
-    TeamsView()
+    TeamsView(seasonNumber: 4, sessionNumber: 5)
 }
