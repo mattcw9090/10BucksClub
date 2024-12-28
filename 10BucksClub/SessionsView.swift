@@ -5,9 +5,11 @@ struct SessionsView: View {
     @Query(sort: \Season.seasonNumber, order: .forward)
     private var seasons: [Season]
     
-    @State private var isSeasonExpanded: Bool = false
+    @Query(sort: \Session.sessionNumber, order: .forward)
+    private var allSessions: [Session]
+    
     @State private var expandedSeasons: [Int: Bool] = [:]
-
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -18,19 +20,21 @@ struct SessionsView: View {
                             set: { expandedSeasons[season.seasonNumber] = $0 }
                         )
                         
+                        // Filter sessions belonging to the current season
+                        let sessionsForSeason = allSessions.filter { $0.season.id == season.id }
+                        
                         SeasonAccordionView(
                             isExpanded: isExpanded,
                             seasonNumber: season.seasonNumber,
-                            sessionCount: season.sessions.count,
+                            sessions: sessionsForSeason,
                             isCompleted: season.isCompleted
                         )
                     }
                 }
                 .listStyle(InsetGroupedListStyle())
-
+                
                 VStack(spacing: 10) {
-                    Button(action: {
-                    }) {
+                    Button(action: addNewSeason) {
                         Text("Add New Season")
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -44,24 +48,34 @@ struct SessionsView: View {
             .navigationTitle("Sessions")
         }
     }
+    
+    // MARK: - Actions
+    
+    private func addNewSeason() {
+        // Implement your add new season logic here
+        // Example:
+        // let newSeason = Season(seasonNumber: nextSeasonNumber)
+        // context.insert(newSeason)
+        // try? context.save()
+    }
 }
 
 struct SeasonAccordionView: View {
     @Binding var isExpanded: Bool
     let seasonNumber: Int
-    let sessionCount: Int
+    let sessions: [Session]
     let isCompleted: Bool
-
+    
     var body: some View {
         DisclosureGroup(
             isExpanded: $isExpanded,
             content: {
-                if sessionCount > 0 {
-                    ForEach(1...sessionCount, id: \ .self) { sessionNumber in
-                        NavigationLink(destination: SessionDetailView(seasonNumber: seasonNumber, sessionNumber: sessionNumber)) {
+                if !sessions.isEmpty {
+                    ForEach(sessions) { session in
+                        NavigationLink(destination: SessionDetailView(seasonNumber: seasonNumber, sessionNumber: session.sessionNumber)) {
                             HStack {
                                 Image(systemName: "calendar.circle.fill")
-                                Text("Session \(sessionNumber)")
+                                Text("Session \(session.sessionNumber)")
                                     .font(.body)
                             }
                             .padding(.vertical, 5)
@@ -73,11 +87,12 @@ struct SeasonAccordionView: View {
                         .foregroundColor(.gray)
                         .padding(.vertical, 5)
                 }
-
+                
                 if !isCompleted {
                     HStack(spacing: 10) {
                         Button(action: {
                             // Add session action
+                            addSession(seasonNumber: seasonNumber)
                         }) {
                             Text("Add Session")
                                 .padding(.vertical, 5)
@@ -87,9 +102,10 @@ struct SeasonAccordionView: View {
                                 .cornerRadius(6)
                                 .font(.caption)
                         }
-
+                        
                         Button(action: {
                             // Mark complete action
+                            markSeasonComplete(seasonNumber: seasonNumber)
                         }) {
                             Text("Mark Complete")
                                 .padding(.vertical, 5)
@@ -116,23 +132,48 @@ struct SeasonAccordionView: View {
             }
         )
     }
+    
+    // MARK: - Actions
+    
+    private func addSession(seasonNumber: Int) {
+        // Implement your add session logic here
+        // Example:
+        // Find the Season object by seasonNumber
+        // let newSession = Session(sessionNumber: nextSessionNumber, season: foundSeason)
+        // context.insert(newSession)
+        // try? context.save()
+    }
+    
+    private func markSeasonComplete(seasonNumber: Int) {
+        // Implement your mark season complete logic here
+        // Example:
+        // Find the Season object by seasonNumber
+        // foundSeason.isCompleted = true
+        // try? context.save()
+    }
 }
 
 #Preview {
-    let schema = Schema([Session.self])
+    let schema = Schema([Season.self, Session.self])
     let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-
+    
     do {
         let mockContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
-
+        
         // Insert Mock Data
         let context = mockContainer.mainContext
-        context.insert(Season(seasonNumber: 10))
-        let season4 = Season(seasonNumber: 4)
-        context.insert(season4)
-        context.insert(Session(number: 1, season: season4))
-        context.insert(Session(number: 2, season: season4))
-
+        
+        let season1 = Season(seasonNumber: 1)
+        let season2 = Season(seasonNumber: 2, isCompleted: true)
+        context.insert(season1)
+        context.insert(season2)
+        let session1 = Session(sessionNumber: 1, season: season1)
+        let session2 = Session(sessionNumber: 2, season: season1)
+        context.insert(session1)
+        context.insert(session2)
+        let session3 = Session(sessionNumber: 1, season: season2)
+        context.insert(session3)
+        
         return SessionsView()
             .modelContainer(mockContainer)
     } catch {

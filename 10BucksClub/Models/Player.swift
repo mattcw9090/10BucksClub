@@ -3,22 +3,12 @@ import SwiftData
 
 @Model
 class Player {
-    @Attribute(.unique) var id: UUID
+    @Attribute(.unique)
+    var id: UUID
+
     var name: String
     var statusRawValue: String
-    
-    var status: PlayerStatus {
-        get { PlayerStatus(rawValue: statusRawValue) ?? .notInSession }
-        set { statusRawValue = newValue.rawValue }
-    }
-    
     var waitlistPosition: Int?
-
-    enum PlayerStatus: String, Codable, CaseIterable {
-        case playing = "Currently Playing"
-        case onWaitlist = "On the Waitlist"
-        case notInSession = "Not in Session"
-    }
 
     init(
         id: UUID = UUID(),
@@ -30,5 +20,16 @@ class Player {
         self.name = name
         self.statusRawValue = status.rawValue
         self.waitlistPosition = waitlistPosition
+    }
+
+    var status: PlayerStatus {
+        get { PlayerStatus(rawValue: statusRawValue) ?? .notInSession }
+        set { statusRawValue = newValue.rawValue }
+    }
+
+    enum PlayerStatus: String, Codable, CaseIterable {
+        case playing = "Currently Playing"
+        case onWaitlist = "On the Waitlist"
+        case notInSession = "Not in Session"
     }
 }

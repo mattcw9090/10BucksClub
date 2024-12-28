@@ -3,13 +3,22 @@ import SwiftData
 
 @Model
 class Session {
-    @Attribute(.unique) var id: UUID
     var sessionNumber: Int
-    @Relationship var season: Season
+    var seasonNumber: Int
 
-    init(id: UUID = UUID(), number: Int, season: Season) {
-        self.id = id
-        self.sessionNumber = number
+    @Attribute(.unique)
+    var uniqueIdentifier: String
+
+    @Relationship
+    var season: Season
+    
+    @Relationship
+    var participants: [SessionParticipants] = []
+
+    init(sessionNumber: Int, season: Season) {
+        self.sessionNumber = sessionNumber
+        self.seasonNumber = season.seasonNumber
+        self.uniqueIdentifier = "\(season.seasonNumber)-\(sessionNumber)"
         self.season = season
     }
 }
