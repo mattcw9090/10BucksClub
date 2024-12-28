@@ -33,33 +33,35 @@ struct ResultsView: View {
     }
 
     var body: some View {
-        // --- 1) Calculate total Red/Black team scores ---
-        let totalRedScore = doublesMatches.reduce(0) { partialResult, match in
+        // 1) Only consider matches that are "complete"
+        let completedMatches = doublesMatches.filter { $0.isComplete }
+
+        // 2) Calculate total Red/Black team scores from completed matches
+        let totalRedScore = completedMatches.reduce(0) { partialResult, match in
             partialResult + match.redTeamScoreFirstSet + match.redTeamScoreSecondSet
         }
 
-        let totalBlackScore = doublesMatches.reduce(0) { partialResult, match in
+        let totalBlackScore = completedMatches.reduce(0) { partialResult, match in
             partialResult + match.blackTeamScoreFirstSet + match.blackTeamScoreSecondSet
         }
 
-        // --- 2) Calculate each participant’s net contribution ---
+        // 3) Calculate each participant’s net contribution from completed matches
         let participantScores = sessionParticipants.map { participant -> (String, Int) in
-            // Filter all Matches in which this participant actually played
-            let relevantMatches = doublesMatches.filter { match in
+            // Filter only the completed matches in which this participant actually played
+            let relevantMatches = completedMatches.filter { match in
                 match.player1.id == participant.player.id ||
                 match.player2.id == participant.player.id ||
                 match.player3.id == participant.player.id ||
                 match.player4.id == participant.player.id
             }
             
-            // Sum up the “black minus red” for each match, then flip sign if participant is Red
+            // Sum up “(blackTeamScore - redTeamScore)” for each match,
+            // then flip sign if participant is on Red
             let netScore = relevantMatches.reduce(0) { sum, match in
                 let blackMinusRed =
                     (match.blackTeamScoreFirstSet + match.blackTeamScoreSecondSet)
                   - (match.redTeamScoreFirstSet   + match.redTeamScoreSecondSet)
 
-                // If participant is on Black, we keep blackMinusRed as is;
-                // if participant is on Red, negate it.
                 let diff = (participant.team == .Black)
                     ? blackMinusRed
                     : -blackMinusRed
@@ -119,6 +121,8 @@ struct ResultsView: View {
     }
 }
 
+// MARK: - SessionResultsRowView
+
 struct SessionResultsRowView: View {
     var playerName: String
     var playerScore: Int
@@ -133,6 +137,8 @@ struct SessionResultsRowView: View {
         .padding(.vertical, 5)
     }
 }
+
+// MARK: - Preview
 
 #Preview {
     let schema = Schema([
@@ -186,6 +192,7 @@ struct SessionResultsRowView: View {
         context.insert(participantsF)
 
         // 4) Create some DoublesMatch objects
+        //    Mark only match1 and match3 as 'complete' (for example)
         let match1 = DoublesMatch(
             session: session,
             waveNumber: 1,
@@ -194,7 +201,8 @@ struct SessionResultsRowView: View {
             player3: playerC,  // Chris Fan
             player4: playerD,  // CJ
             redTeamScoreFirstSet: 21,
-            blackTeamScoreFirstSet: 15
+            blackTeamScoreFirstSet: 15,
+            isComplete: true
         )
         let match2 = DoublesMatch(
             session: session,
@@ -202,8 +210,9 @@ struct SessionResultsRowView: View {
             player1: playerE,  // Nicson
             player2: playerF,  // Issac
             player3: playerC,  // Chris Fan
-            player4: playerD   // CJ
+            player4: playerD,  // CJ
             // No scores yet
+            isComplete: false
         )
         let match3 = DoublesMatch(
             session: session,
@@ -213,7 +222,8 @@ struct SessionResultsRowView: View {
             player3: playerC,
             player4: playerD,
             redTeamScoreFirstSet: 18,
-            blackTeamScoreFirstSet: 22
+            blackTeamScoreFirstSet: 22,
+            isComplete: true
         )
         context.insert(match1)
         context.insert(match2)
@@ -225,4 +235,3 @@ struct SessionResultsRowView: View {
         fatalError("Could not create ModelContainer: \(error)")
     }
 }
-

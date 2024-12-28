@@ -9,11 +9,13 @@ class DoublesMatch {
     @Relationship var player2: Player
     @Relationship var player3: Player
     @Relationship var player4: Player
+
     var waveNumber: Int
     var redTeamScoreFirstSet: Int
     var blackTeamScoreFirstSet: Int
     var redTeamScoreSecondSet: Int
     var blackTeamScoreSecondSet: Int
+    var isComplete: Bool
     
     init(
         id: UUID = UUID(),
@@ -26,7 +28,8 @@ class DoublesMatch {
         redTeamScoreFirstSet: Int = 0,
         blackTeamScoreFirstSet: Int = 0,
         redTeamScoreSecondSet: Int = 0,
-        blackTeamScoreSecondSet: Int = 0
+        blackTeamScoreSecondSet: Int = 0,
+        isComplete: Bool = false
     ) {
         self.id = id
         self.session = session
@@ -39,5 +42,7 @@ class DoublesMatch {
         self.blackTeamScoreFirstSet = blackTeamScoreFirstSet
         self.redTeamScoreSecondSet = redTeamScoreSecondSet
         self.blackTeamScoreSecondSet = blackTeamScoreSecondSet
+        self.isComplete = isComplete
     }
 }
+
