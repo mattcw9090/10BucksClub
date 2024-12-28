@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct SeasonalResultsView: View {
+    let seasonNumber: Int
+    
     var body: some View {
         NavigationView {
             List {
@@ -43,5 +45,5 @@ struct SeasonalResultsRowView: View {
 }
 
 #Preview {
-    SeasonalResultsView()
+    SeasonalResultsView(seasonNumber: 5)
 }

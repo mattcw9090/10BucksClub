@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct ResultsView: View {
+    let seasonNumber: Int
+    let sessionNumber: Int
+    
     var body: some View {
         VStack(spacing: 20) {
             VStack {
@@ -64,5 +67,5 @@ struct SessionResultsRowView: View {
 }
 
 #Preview {
-    ResultsView()
+    ResultsView(seasonNumber: 5, sessionNumber: 3)
 }

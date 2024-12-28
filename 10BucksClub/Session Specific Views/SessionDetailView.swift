@@ -31,11 +31,11 @@ struct SessionDetailView: View {
             case .teams:
                 TeamsView(seasonNumber: seasonNumber, sessionNumber: sessionNumber)
             case .draws:
-                DrawsView()
+                DrawsView(seasonNumber: seasonNumber, sessionNumber: sessionNumber)
             case .results:
-                ResultsView()
+                ResultsView(seasonNumber: seasonNumber, sessionNumber: sessionNumber)
             case .seasonalResults:
-                SeasonalResultsView()
+                SeasonalResultsView(seasonNumber: seasonNumber)
             }
             
             Spacer()

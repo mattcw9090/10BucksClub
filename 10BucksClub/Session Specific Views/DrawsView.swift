@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct DrawsView: View {
+    let seasonNumber: Int
+    let sessionNumber: Int
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -143,5 +146,5 @@ struct MatchView: View {
 }
 
 #Preview {
-    DrawsView()
+    DrawsView(seasonNumber: 4, sessionNumber: 5)
 }
