@@ -6,85 +6,63 @@ struct DrawsView: View {
 
     @Query private var allDoublesMatches: [DoublesMatch]
 
-    private var relevantMatches: [DoublesMatch] {
-        allDoublesMatches.filter { $0.session == session }
-    }
-
-    private var waveGroups: [Int: [DoublesMatch]] {
-        Dictionary(grouping: relevantMatches) { $0.waveNumber }
-    }
-
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Loop through each wave number in ascending order
-                ForEach(waveGroups.keys.sorted(), id: \.self) { wave in
-                    // Retrieve the matches for this wave
-                    let waveMatches = waveGroups[wave] ?? []
-
-                    // Convert the DoublesMatch data to your existing Match struct
+                ForEach(
+                    Dictionary(grouping: allDoublesMatches.filter { $0.session == session }, by: { $0.waveNumber })
+                        .keys.sorted(),
+                    id: \.self
+                ) { wave in
                     WaveView(
                         title: "Wave \(wave)",
-                        matches: waveMatches.map(convertToMatch)
+                        matches: (Dictionary(grouping: allDoublesMatches.filter { $0.session == session }, by: { $0.waveNumber })[wave] ?? []).map(convertToMatch)
                     )
                 }
             }
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
 
-    // MARK: - Conversion Helper
-    /// Convert a DoublesMatch model instance into your ephemeral Match struct for display.
     private func convertToMatch(_ doublesMatch: DoublesMatch) -> Match {
-        let anyPointsScored = (
-            doublesMatch.redTeamScoreFirstSet +
-            doublesMatch.blackTeamScoreFirstSet +
-            doublesMatch.redTeamScoreSecondSet +
-            doublesMatch.blackTeamScoreSecondSet
-        ) > 0
-
-        let redTotal = doublesMatch.redTeamScoreFirstSet + doublesMatch.redTeamScoreSecondSet
-        let blackTotal = doublesMatch.blackTeamScoreFirstSet + doublesMatch.blackTeamScoreSecondSet
-        let winningTeam: Team? = redTotal > blackTotal ? .Red : (blackTotal > redTotal ? .Black : nil)
-
-        let scoreString = "\(doublesMatch.redTeamScoreFirstSet)-\(doublesMatch.blackTeamScoreFirstSet), \(doublesMatch.redTeamScoreSecondSet)-\(doublesMatch.blackTeamScoreSecondSet)"
+        let totalRed = doublesMatch.redTeamScoreFirstSet + doublesMatch.redTeamScoreSecondSet
+        let totalBlack = doublesMatch.blackTeamScoreFirstSet + doublesMatch.blackTeamScoreSecondSet
+        let anyPoints = totalRed + totalBlack > 0
+        let winningTeam: Team? = totalRed > totalBlack ? .Red : (totalBlack > totalRed ? .Black : nil)
+        let score = anyPoints ? "\(doublesMatch.redTeamScoreFirstSet)-\(doublesMatch.blackTeamScoreFirstSet), \(doublesMatch.redTeamScoreSecondSet)-\(doublesMatch.blackTeamScoreSecondSet)" : nil
 
         return Match(
             name1: doublesMatch.player1.name,
             name2: doublesMatch.player2.name,
             name3: doublesMatch.player3.name,
             name4: doublesMatch.player4.name,
-            isCompleted: anyPointsScored,
-            winningTeam: anyPointsScored ? winningTeam : nil,
-            score: anyPointsScored ? scoreString : nil
+            isCompleted: anyPoints,
+            winningTeam: anyPoints ? winningTeam : nil,
+            score: score
         )
     }
 }
-
-// MARK: - Existing Waves and Match Views
 
 struct WaveView: View {
     let title: String
     let matches: [Match]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(title)
                 .font(.headline)
-                .padding(.bottom, 5)
+                .padding(10)
 
-            VStack(spacing: 0) {
-                ForEach(matches, id: \.id) { match in
-                    MatchView(
-                        name1: match.name1,
-                        name2: match.name2,
-                        name3: match.name3,
-                        name4: match.name4,
-                        isCompleted: match.isCompleted,
-                        winningTeam: match.winningTeam,
-                        score: match.score
-                    )
-                }
+            ForEach(matches) { match in
+                MatchView(
+                    name1: match.name1,
+                    name2: match.name2,
+                    name3: match.name3,
+                    name4: match.name4,
+                    isCompleted: match.isCompleted,
+                    winningTeam: match.winningTeam,
+                    score: match.score
+                )
             }
         }
     }
@@ -102,16 +80,13 @@ struct Match: Identifiable {
 }
 
 struct MatchView: View {
-    let name1: String
-    let name2: String
-    let name3: String
-    let name4: String
+    let name1, name2, name3, name4: String
     let isCompleted: Bool
     let winningTeam: Team?
     let score: String?
 
-    @State private var showScore: Bool = false
-    @State private var inputScore: String = ""
+    @State private var showScore = false
+    @State private var inputScore = ""
 
     var body: some View {
         VStack {
@@ -123,8 +98,7 @@ struct MatchView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
 
-                Text("vs")
-                    .bold()
+                Text("vs").bold()
 
                 VStack(alignment: .trailing, spacing: 10) {
                     Text(name3)
@@ -136,11 +110,7 @@ struct MatchView: View {
             .background(isCompleted ? winningTeamColor : Color.clear)
             .border(Color.gray, width: 1)
             .padding(.horizontal)
-            .onTapGesture {
-                withAnimation {
-                    showScore.toggle()
-                }
-            }
+            .onTapGesture { withAnimation { showScore.toggle() } }
 
             if showScore {
                 if isCompleted, let matchScore = score {
@@ -155,7 +125,7 @@ struct MatchView: View {
                             .padding(.horizontal)
 
                         Button("Save") {
-                            // In practice, you'd update the underlying DoublesMatch in SwiftData
+                            // Update the underlying DoublesMatch in SwiftData
                             print("Score saved: \(inputScore)")
                             showScore = false
                         }
@@ -191,59 +161,44 @@ struct MatchView: View {
         let mockContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
         let context = mockContainer.mainContext
 
-        // Create a Season & Session
         let season = Season(seasonNumber: 4)
         context.insert(season)
 
         let session = Session(sessionNumber: 5, season: season)
         context.insert(session)
 
-        // Create some Players
-        let playerA = Player(name: "Shin")
-        let playerB = Player(name: "Suan Sian Foo")
-        let playerC = Player(name: "Chris Fan")
-        let playerD = Player(name: "CJ")
-        let playerE = Player(name: "Nicson Hiew")
-        let playerF = Player(name: "Issac Lai")
-        context.insert(playerA)
-        context.insert(playerB)
-        context.insert(playerC)
-        context.insert(playerD)
-        context.insert(playerE)
-        context.insert(playerF)
+        let players = ["Shin", "Suan Sian Foo", "Chris Fan", "CJ", "Nicson Hiew", "Issac Lai"].map { Player(name: $0) }
+        players.forEach { context.insert($0) }
 
-        // Create some DoublesMatch objects
         let match1 = DoublesMatch(
             session: session,
             waveNumber: 1,
-            player1: playerA,
-            player2: playerB,
-            player3: playerC,
-            player4: playerD,
+            player1: players[0],
+            player2: players[1],
+            player3: players[2],
+            player4: players[3],
             redTeamScoreFirstSet: 21,
             blackTeamScoreFirstSet: 15
         )
         let match2 = DoublesMatch(
             session: session,
             waveNumber: 1,
-            player1: playerE,
-            player2: playerF,
-            player3: playerC,
-            player4: playerD
+            player1: players[4],
+            player2: players[5],
+            player3: players[2],
+            player4: players[3]
         )
         let match3 = DoublesMatch(
             session: session,
             waveNumber: 2,
-            player1: playerB,
-            player2: playerA,
-            player3: playerC,
-            player4: playerD,
+            player1: players[1],
+            player2: players[0],
+            player3: players[2],
+            player4: players[3],
             redTeamScoreFirstSet: 18,
             blackTeamScoreFirstSet: 21
         )
-        context.insert(match1)
-        context.insert(match2)
-        context.insert(match3)
+        [match1, match2, match3].forEach { context.insert($0) }
 
         return DrawsView(session: session)
             .modelContainer(mockContainer)
