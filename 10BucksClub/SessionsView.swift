@@ -30,7 +30,8 @@ struct SessionsView: View {
                             isExpanded: isExpanded,
                             seasonNumber: season.seasonNumber,
                             sessions: sessionsForSeason,
-                            isCompleted: season.isCompleted
+                            isCompleted: season.isCompleted,
+                            addSession: { addSession(to: season) }
                         )
                     }
                 }
@@ -58,24 +59,17 @@ struct SessionsView: View {
     // MARK: - Actions
     
     private func addNewSeason() {
-        // Check if all seasons are completed
         guard seasons.allSatisfy({ $0.isCompleted }) else {
             alertMessage = "All previous seasons must be marked as completed before adding a new season."
             showAlert = true
             return
         }
         
-        // Determine the next season number
         let nextSeasonNumber = (seasons.map { $0.seasonNumber }.max() ?? 0) + 1
-        
-        // Create a new season
         let newSeason = Season(seasonNumber: nextSeasonNumber)
-        
-        // Insert the new season into the model context
         modelContext.insert(newSeason)
         
         do {
-            // Save the context to persist the data
             try modelContext.save()
             print("New season added: Season \(nextSeasonNumber)")
         } catch {
@@ -83,14 +77,31 @@ struct SessionsView: View {
             showAlert = true
         }
     }
+    
+    private func addSession(to season: Season) {
+        let nextSessionNumber = (allSessions
+                                    .filter { $0.season.id == season.id }
+                                    .map { $0.sessionNumber }
+                                    .max() ?? 0) + 1
+        let newSession = Session(sessionNumber: nextSessionNumber, season: season)
+        modelContext.insert(newSession)
+        
+        do {
+            try modelContext.save()
+            print("New session added: Session \(nextSessionNumber) for Season \(season.seasonNumber)")
+        } catch {
+            alertMessage = "Failed to save the new session: \(error)"
+            showAlert = true
+        }
+    }
 }
-
 
 struct SeasonAccordionView: View {
     @Binding var isExpanded: Bool
     let seasonNumber: Int
     let sessions: [Session]
     let isCompleted: Bool
+    let addSession: () -> Void
     
     var body: some View {
         DisclosureGroup(
@@ -115,11 +126,8 @@ struct SeasonAccordionView: View {
                 }
                 
                 if !isCompleted {
-                    HStack(spacing: 10) {
-                        Button(action: {
-                            // Add session action
-                            addSession(seasonNumber: seasonNumber)
-                        }) {
+                    HStack(spacing: 20) {
+                        Button(action: addSession) {
                             Text("Add Session")
                                 .padding(.vertical, 5)
                                 .padding(.horizontal, 10)
@@ -128,9 +136,9 @@ struct SeasonAccordionView: View {
                                 .cornerRadius(6)
                                 .font(.caption)
                         }
+                        .buttonStyle(PlainButtonStyle()) // Ensures the button behaves independently
                         
                         Button(action: {
-                            // Mark complete action
                             markSeasonComplete(seasonNumber: seasonNumber)
                         }) {
                             Text("Mark Complete")
@@ -141,6 +149,7 @@ struct SeasonAccordionView: View {
                                 .cornerRadius(6)
                                 .font(.caption)
                         }
+                        .buttonStyle(PlainButtonStyle()) // Ensures the button behaves independently
                     }
                     .padding(.top, 10)
                 }
@@ -157,25 +166,11 @@ struct SeasonAccordionView: View {
                 }
             }
         )
-    }
-    
-    // MARK: - Actions
-    
-    private func addSession(seasonNumber: Int) {
-        // Implement your add session logic here
-        // Example:
-        // Find the Season object by seasonNumber
-        // let newSession = Session(sessionNumber: nextSessionNumber, season: foundSeason)
-        // context.insert(newSession)
-        // try? context.save()
+        .contentShape(Rectangle()) // Ensures tapable area is explicitly defined
     }
     
     private func markSeasonComplete(seasonNumber: Int) {
-        // Implement your mark season complete logic here
-        // Example:
-        // Find the Season object by seasonNumber
-        // foundSeason.isCompleted = true
-        // try? context.save()
+        print("Mark Complete triggered for season \(seasonNumber)")
     }
 }
 
@@ -189,7 +184,7 @@ struct SeasonAccordionView: View {
         // Insert Mock Data
         let context = mockContainer.mainContext
         
-        let season1 = Season(seasonNumber: 1)
+        let season1 = Season(seasonNumber: 1, isCompleted: true)
         let season2 = Season(seasonNumber: 2, isCompleted: true)
         context.insert(season1)
         context.insert(season2)
