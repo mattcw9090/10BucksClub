@@ -8,6 +8,8 @@ struct SessionsView: View {
     @Query(sort: \Session.sessionNumber, order: .forward)
     private var allSessions: [Session]
     
+    @Environment(\.modelContext) private var modelContext
+    
     @State private var expandedSeasons: [Int: Bool] = [:]
     
     var body: some View {
@@ -52,11 +54,22 @@ struct SessionsView: View {
     // MARK: - Actions
     
     private func addNewSeason() {
-        // Implement your add new season logic here
-        // Example:
-        // let newSeason = Season(seasonNumber: nextSeasonNumber)
-        // context.insert(newSeason)
-        // try? context.save()
+        // Determine the next season number
+        let nextSeasonNumber = (seasons.map { $0.seasonNumber }.max() ?? 0) + 1
+        
+        // Create a new season
+        let newSeason = Season(seasonNumber: nextSeasonNumber)
+        
+        // Insert the new season into the model context
+        modelContext.insert(newSeason)
+        
+        do {
+            // Save the context to persist the data
+            try modelContext.save()
+            print("New season added: Season \(nextSeasonNumber)")
+        } catch {
+            print("Failed to save the new season: \(error)")
+        }
     }
 }
 
