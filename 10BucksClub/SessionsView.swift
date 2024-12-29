@@ -31,7 +31,8 @@ struct SessionsView: View {
                             seasonNumber: season.seasonNumber,
                             sessions: sessionsForSeason,
                             isCompleted: season.isCompleted,
-                            addSession: { addSession(to: season) }
+                            addSession: { addSession(to: season) },
+                            markComplete: { markSeasonComplete(season) }
                         )
                     }
                 }
@@ -94,6 +95,21 @@ struct SessionsView: View {
             showAlert = true
         }
     }
+    
+    private func markSeasonComplete(_ season: Season) {
+        guard let index = seasons.firstIndex(where: { $0.id == season.id }) else { return }
+        var updatedSeason = seasons[index]
+        updatedSeason.isCompleted = true
+        
+        do {
+            modelContext.insert(updatedSeason)
+            try modelContext.save()
+            print("Season \(season.seasonNumber) marked as complete")
+        } catch {
+            alertMessage = "Failed to mark the season as complete: \(error)"
+            showAlert = true
+        }
+    }
 }
 
 struct SeasonAccordionView: View {
@@ -102,6 +118,7 @@ struct SeasonAccordionView: View {
     let sessions: [Session]
     let isCompleted: Bool
     let addSession: () -> Void
+    let markComplete: () -> Void
     
     var body: some View {
         DisclosureGroup(
@@ -136,11 +153,9 @@ struct SeasonAccordionView: View {
                                 .cornerRadius(6)
                                 .font(.caption)
                         }
-                        .buttonStyle(PlainButtonStyle()) // Ensures the button behaves independently
+                        .buttonStyle(PlainButtonStyle())
                         
-                        Button(action: {
-                            markSeasonComplete(seasonNumber: seasonNumber)
-                        }) {
+                        Button(action: markComplete) {
                             Text("Mark Complete")
                                 .padding(.vertical, 5)
                                 .padding(.horizontal, 10)
@@ -149,7 +164,7 @@ struct SeasonAccordionView: View {
                                 .cornerRadius(6)
                                 .font(.caption)
                         }
-                        .buttonStyle(PlainButtonStyle()) // Ensures the button behaves independently
+                        .buttonStyle(PlainButtonStyle())
                     }
                     .padding(.top, 10)
                 }
@@ -166,11 +181,7 @@ struct SeasonAccordionView: View {
                 }
             }
         )
-        .contentShape(Rectangle()) // Ensures tapable area is explicitly defined
-    }
-    
-    private func markSeasonComplete(seasonNumber: Int) {
-        print("Mark Complete triggered for season \(seasonNumber)")
+        .contentShape(Rectangle())
     }
 }
 
@@ -185,15 +196,9 @@ struct SeasonAccordionView: View {
         let context = mockContainer.mainContext
         
         let season1 = Season(seasonNumber: 1, isCompleted: true)
-        let season2 = Season(seasonNumber: 2, isCompleted: true)
         context.insert(season1)
-        context.insert(season2)
         let session1 = Session(sessionNumber: 1, season: season1)
-        let session2 = Session(sessionNumber: 2, season: season1)
         context.insert(session1)
-        context.insert(session2)
-        let session3 = Session(sessionNumber: 1, season: season2)
-        context.insert(session3)
         
         return SessionsView()
             .modelContainer(mockContainer)
