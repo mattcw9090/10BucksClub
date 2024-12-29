@@ -6,7 +6,8 @@ enum DetailSegment: String, CaseIterable, Identifiable {
     case draws = "Draws"
     case results = "Results"
     case seasonalResults = "Season"
-    var id: String { self.rawValue }
+    
+    var id: String { rawValue }
 }
 
 struct SessionDetailView: View {
@@ -18,13 +19,11 @@ struct SessionDetailView: View {
         VStack {
             Picker("View", selection: $selectedSegment) {
                 ForEach(DetailSegment.allCases) { segment in
-                    Text(segment.rawValue)
-                        .tag(segment)
+                    Text(segment.rawValue).tag(segment)
                 }
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.top)
+            .padding([.horizontal, .top])
 
             switch selectedSegment {
             case .teams:
