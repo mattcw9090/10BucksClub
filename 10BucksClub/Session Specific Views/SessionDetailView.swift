@@ -6,16 +6,14 @@ enum DetailSegment: String, CaseIterable, Identifiable {
     case draws = "Draws"
     case results = "Results"
     case seasonalResults = "Season"
-    
     var id: String { self.rawValue }
 }
 
 struct SessionDetailView: View {
-    let seasonNumber: Int
-    let sessionNumber: Int
-    
+    let session: Session
+
     @State private var selectedSegment: DetailSegment = .teams
-    
+
     var body: some View {
         VStack {
             Picker("View", selection: $selectedSegment) {
@@ -27,33 +25,33 @@ struct SessionDetailView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal)
             .padding(.top)
-            
+
             switch selectedSegment {
             case .teams:
-                TeamsView(seasonNumber: seasonNumber, sessionNumber: sessionNumber)
+                TeamsView(session: session)
             case .draws:
-                DrawsView(seasonNumber: seasonNumber, sessionNumber: sessionNumber)
+                DrawsView(session: session)
             case .results:
-                ResultsView(seasonNumber: seasonNumber, sessionNumber: sessionNumber)
+                ResultsView(session: session)
             case .seasonalResults:
-                SeasonalResultsView(seasonNumber: seasonNumber)
+                SeasonalResultsView(seasonNumber: session.seasonNumber)
             }
-            
+
             Spacer()
         }
-        .navigationTitle("Season \(seasonNumber) Session \(sessionNumber)")
+        .navigationTitle("Season \(session.seasonNumber) Session \(session.sessionNumber)")
     }
 }
 
 #Preview {
     let schema = Schema([Season.self, Session.self, Player.self, SessionParticipants.self])
     let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-    
+
     do {
         let mockContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
         let context = mockContainer.mainContext
-        
-        // Insert a mock data
+
+        // Insert mock data
         let season = Season(seasonNumber: 4)
         context.insert(season)
         let session = Session(sessionNumber: 5, season: season)
@@ -74,8 +72,8 @@ struct SessionDetailView: View {
         context.insert(p2)
         context.insert(p3)
         context.insert(p4)
-        
-        return SessionDetailView(seasonNumber: 4, sessionNumber: 5)
+
+        return SessionDetailView(session: session)
             .modelContainer(mockContainer)
     } catch {
         fatalError("Could not create ModelContainer: \(error)")

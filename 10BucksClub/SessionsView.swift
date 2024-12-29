@@ -98,7 +98,7 @@ struct SessionsView: View {
     
     private func markSeasonComplete(_ season: Season) {
         guard let index = seasons.firstIndex(where: { $0.id == season.id }) else { return }
-        var updatedSeason = seasons[index]
+        let updatedSeason = seasons[index]
         updatedSeason.isCompleted = true
         
         do {
@@ -126,7 +126,7 @@ struct SeasonAccordionView: View {
             content: {
                 if !sessions.isEmpty {
                     ForEach(sessions) { session in
-                        NavigationLink(destination: SessionDetailView(seasonNumber: seasonNumber, sessionNumber: session.sessionNumber)) {
+                        NavigationLink(destination: SessionDetailView(session: session)) {
                             HStack {
                                 Image(systemName: "calendar.circle.fill")
                                 Text("Session \(session.sessionNumber)")

@@ -2,15 +2,12 @@ import SwiftUI
 import SwiftData
 
 struct DrawsView: View {
-    let seasonNumber: Int
-    let sessionNumber: Int
+    let session: Session
 
     @Query private var allDoublesMatches: [DoublesMatch]
 
     private var relevantMatches: [DoublesMatch] {
-        allDoublesMatches.filter {
-            $0.session.uniqueIdentifier == "\(seasonNumber)-\(sessionNumber)"
-        }
+        allDoublesMatches.filter { $0.session == session }
     }
 
     private var waveGroups: [Int: [DoublesMatch]] {
@@ -39,7 +36,6 @@ struct DrawsView: View {
     // MARK: - Conversion Helper
     /// Convert a DoublesMatch model instance into your ephemeral Match struct for display.
     private func convertToMatch(_ doublesMatch: DoublesMatch) -> Match {
-        // Determine if the match is completed by checking if there's any recorded scoring.
         let anyPointsScored = (
             doublesMatch.redTeamScoreFirstSet +
             doublesMatch.blackTeamScoreFirstSet +
@@ -47,15 +43,10 @@ struct DrawsView: View {
             doublesMatch.blackTeamScoreSecondSet
         ) > 0
 
-        // You can define your own logic to decide the winning team.
-        // For example, if the red team's total is higher than black's total, redTeam won.
-        // Or you might track set-by-set results if you store them more granularly.
         let redTotal = doublesMatch.redTeamScoreFirstSet + doublesMatch.redTeamScoreSecondSet
         let blackTotal = doublesMatch.blackTeamScoreFirstSet + doublesMatch.blackTeamScoreSecondSet
         let winningTeam: Team? = redTotal > blackTotal ? .Red : (blackTotal > redTotal ? .Black : nil)
 
-        // Format a simple "Score" string from the sets.
-        // (In real usage, you might do something more precise for 2-set or 3-set matches.)
         let scoreString = "\(doublesMatch.redTeamScoreFirstSet)-\(doublesMatch.blackTeamScoreFirstSet), \(doublesMatch.redTeamScoreSecondSet)-\(doublesMatch.blackTeamScoreSecondSet)"
 
         return Match(
@@ -63,7 +54,6 @@ struct DrawsView: View {
             name2: doublesMatch.player2.name,
             name3: doublesMatch.player3.name,
             name4: doublesMatch.player4.name,
-            // Mark as completed if there are any points on the board.
             isCompleted: anyPointsScored,
             winningTeam: anyPointsScored ? winningTeam : nil,
             score: anyPointsScored ? scoreString : nil
@@ -226,21 +216,20 @@ struct MatchView: View {
         let match1 = DoublesMatch(
             session: session,
             waveNumber: 1,
-            player1: playerA,  // Shin
-            player2: playerB,  // Suan Sian Foo
-            player3: playerC,  // Chris Fan
-            player4: playerD,  // CJ
+            player1: playerA,
+            player2: playerB,
+            player3: playerC,
+            player4: playerD,
             redTeamScoreFirstSet: 21,
             blackTeamScoreFirstSet: 15
         )
         let match2 = DoublesMatch(
             session: session,
             waveNumber: 1,
-            player1: playerE,  // Nicson
-            player2: playerF,  // Issac
-            player3: playerC,  // Chris Fan
-            player4: playerD   // CJ
-            // No scores yet
+            player1: playerE,
+            player2: playerF,
+            player3: playerC,
+            player4: playerD
         )
         let match3 = DoublesMatch(
             session: session,
@@ -256,7 +245,7 @@ struct MatchView: View {
         context.insert(match2)
         context.insert(match3)
 
-        return DrawsView(seasonNumber: 4, sessionNumber: 5)
+        return DrawsView(session: session)
             .modelContainer(mockContainer)
     } catch {
         fatalError("Could not create ModelContainer: \(error)")

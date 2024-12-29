@@ -2,32 +2,26 @@ import SwiftUI
 import SwiftData
 
 struct ResultsView: View {
-    let seasonNumber: Int
-    let sessionNumber: Int
+    let session: Session
 
-    // Query: Fetch DoublesMatches for this session & season
     @Query private var doublesMatches: [DoublesMatch]
-
-    // Query: Fetch SessionParticipants for this session & season
     @Query private var sessionParticipants: [SessionParticipants]
 
-    init(seasonNumber: Int, sessionNumber: Int) {
-        self.seasonNumber = seasonNumber
-        self.sessionNumber = sessionNumber
+    init(session: Session) {
+        self.session = session
+        let sessionID = session.uniqueIdentifier
 
-        // Query all DoublesMatches with matching season/session
+        // Query all DoublesMatches for this session
         self._doublesMatches = Query(
             filter: #Predicate<DoublesMatch> { match in
-                match.session.seasonNumber == seasonNumber &&
-                match.session.sessionNumber == sessionNumber
+                match.session.uniqueIdentifier == sessionID
             }
         )
 
         // Query all Participants for this session
         self._sessionParticipants = Query(
             filter: #Predicate<SessionParticipants> { participant in
-                participant.session.seasonNumber == seasonNumber &&
-                participant.session.sessionNumber == sessionNumber
+                participant.session.uniqueIdentifier == sessionID
             }
         )
     }
@@ -47,16 +41,13 @@ struct ResultsView: View {
 
         // 3) Calculate each participant’s net contribution from completed matches
         let participantScores = sessionParticipants.map { participant -> (String, Int) in
-            // Filter only the completed matches in which this participant actually played
             let relevantMatches = completedMatches.filter { match in
                 match.player1.id == participant.player.id ||
                 match.player2.id == participant.player.id ||
                 match.player3.id == participant.player.id ||
                 match.player4.id == participant.player.id
             }
-            
-            // Sum up “(blackTeamScore - redTeamScore)” for each match,
-            // then flip sign if participant is on Red
+
             let netScore = relevantMatches.reduce(0) { sum, match in
                 let blackMinusRed =
                     (match.blackTeamScoreFirstSet + match.blackTeamScoreSecondSet)
@@ -192,14 +183,13 @@ struct SessionResultsRowView: View {
         context.insert(participantsF)
 
         // 4) Create some DoublesMatch objects
-        //    Mark only match1 and match3 as 'complete' (for example)
         let match1 = DoublesMatch(
             session: session,
             waveNumber: 1,
-            player1: playerA,  // Shin
-            player2: playerB,  // Suan Sian Foo
-            player3: playerC,  // Chris Fan
-            player4: playerD,  // CJ
+            player1: playerA,
+            player2: playerB,
+            player3: playerC,
+            player4: playerD,
             redTeamScoreFirstSet: 21,
             blackTeamScoreFirstSet: 15,
             isComplete: true
@@ -207,11 +197,10 @@ struct SessionResultsRowView: View {
         let match2 = DoublesMatch(
             session: session,
             waveNumber: 1,
-            player1: playerE,  // Nicson
-            player2: playerF,  // Issac
-            player3: playerC,  // Chris Fan
-            player4: playerD,  // CJ
-            // No scores yet
+            player1: playerE,
+            player2: playerF,
+            player3: playerC,
+            player4: playerD,
             isComplete: false
         )
         let match3 = DoublesMatch(
@@ -229,7 +218,7 @@ struct SessionResultsRowView: View {
         context.insert(match2)
         context.insert(match3)
 
-        return ResultsView(seasonNumber: 4, sessionNumber: 5)
+        return ResultsView(session: session)
             .modelContainer(mockContainer)
     } catch {
         fatalError("Could not create ModelContainer: \(error)")
