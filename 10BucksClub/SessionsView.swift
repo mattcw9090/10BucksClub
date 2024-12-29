@@ -11,6 +11,8 @@ struct SessionsView: View {
     @Environment(\.modelContext) private var modelContext
     
     @State private var expandedSeasons: [Int: Bool] = [:]
+    @State private var showAlert = false
+    @State private var alertMessage = ""
     
     var body: some View {
         NavigationView {
@@ -22,7 +24,6 @@ struct SessionsView: View {
                             set: { expandedSeasons[season.seasonNumber] = $0 }
                         )
                         
-                        // Filter sessions belonging to the current season
                         let sessionsForSeason = allSessions.filter { $0.season.id == season.id }
                         
                         SeasonAccordionView(
@@ -48,12 +49,22 @@ struct SessionsView: View {
                 .padding()
             }
             .navigationTitle("Sessions")
+            .alert(isPresented: $showAlert) {
+                Alert(title: Text("Cannot Add Season"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            }
         }
     }
     
     // MARK: - Actions
     
     private func addNewSeason() {
+        // Check if all seasons are completed
+        guard seasons.allSatisfy({ $0.isCompleted }) else {
+            alertMessage = "All previous seasons must be marked as completed before adding a new season."
+            showAlert = true
+            return
+        }
+        
         // Determine the next season number
         let nextSeasonNumber = (seasons.map { $0.seasonNumber }.max() ?? 0) + 1
         
@@ -68,10 +79,12 @@ struct SessionsView: View {
             try modelContext.save()
             print("New season added: Season \(nextSeasonNumber)")
         } catch {
-            print("Failed to save the new season: \(error)")
+            alertMessage = "Failed to save the new season: \(error)"
+            showAlert = true
         }
     }
 }
+
 
 struct SeasonAccordionView: View {
     @Binding var isExpanded: Bool
