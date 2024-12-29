@@ -6,17 +6,14 @@ struct AllPlayersView: View {
     @Query(sort: \Player.name) private var allPlayers: [Player]
     
     @State private var showingAddPlayerSheet = false
-    @State private var showingEditPlayerSheet = false
     @State private var selectedPlayerForEditing: Player?
-
+    
     var body: some View {
         NavigationView {
             List {
                 ForEach(allPlayers) { player in
                     Button {
-                        // Optionally, you could use a button or a NavigationLink to edit
                         selectedPlayerForEditing = player
-                        showingEditPlayerSheet = true
                     } label: {
                         PlayerRowView(player: player)
                     }
@@ -43,7 +40,6 @@ struct AllPlayersView: View {
             .sheet(isPresented: $showingAddPlayerSheet) {
                 AddPlayerView()
             }
-            // Present the Edit sheet when we have a selected player
             .sheet(item: $selectedPlayerForEditing) { player in
                 EditPlayerView(player: player)
             }
@@ -54,7 +50,6 @@ struct AllPlayersView: View {
         modelContext.delete(player)
     }
 }
-
 
 #Preview {
     let schema = Schema([Player.self])

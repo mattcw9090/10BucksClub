@@ -86,7 +86,7 @@ struct SessionsView: View {
 
     private func markSeasonComplete(_ season: Season) {
         guard let index = seasons.firstIndex(where: { $0.id == season.id }) else { return }
-        var updatedSeason = seasons[index]
+        let updatedSeason = seasons[index]
         updatedSeason.isCompleted = true
         modelContext.insert(updatedSeason)
 
