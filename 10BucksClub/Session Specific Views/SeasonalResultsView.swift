@@ -4,45 +4,39 @@ import SwiftData
 struct SeasonalResultsView: View {
     let seasonNumber: Int
 
-    // Query all Sessions for this season
+    // MARK: - Queries
+
     @Query private var seasonSessions: [Session]
-
-    // Query all SessionParticipants for this season
     @Query private var allParticipants: [SessionParticipants]
-
-    // Query all DoublesMatch for this season
     @Query private var allMatches: [DoublesMatch]
+
+    // MARK: - Initialization
 
     init(seasonNumber: Int) {
         self.seasonNumber = seasonNumber
-        
+
         self._seasonSessions = Query(
             filter: #Predicate<Session> { $0.seasonNumber == seasonNumber }
         )
-        
+
         self._allParticipants = Query(
             filter: #Predicate<SessionParticipants> { $0.session.seasonNumber == seasonNumber }
         )
-        
+
         self._allMatches = Query(
             filter: #Predicate<DoublesMatch> { $0.session.seasonNumber == seasonNumber }
         )
     }
 
-    /// For each player:
-    ///   - The # of distinct sessions
-    ///   - The # of matches played
-    ///   - The total net across those matches
-    ///   - Their average net score
+    // MARK: - Computed Properties
+
     private var aggregatedPlayers: [
         (player: Player, sessionCount: Int, matchCount: Int, averageScore: Double)
     ] {
-        // Dictionary of stats keyed by Player.id
-        // value = (player, sessionsAttended, totalNet, matchCount)
         var playerStats: [UUID: (player: Player, sessionsAttended: Set<Int>, totalNet: Int, matchCount: Int)] = [:]
 
-        // 1) Record which sessions each player attends
-        for participant in allParticipants {
+        // 1) Record sessions attended by each player
+        allParticipants.forEach { participant in
             let pid = participant.player.id
             let sNumber = participant.session.sessionNumber
 
@@ -59,66 +53,57 @@ struct SeasonalResultsView: View {
             }
         }
 
-        // 2) Only consider *complete* matches
+        // 2) Filter only complete matches
         let completedMatches = allMatches.filter { $0.isComplete }
 
-        // 3) Aggregate net scores for each complete match
-        for match in completedMatches {
-            let blackMinusRed =
-                (match.blackTeamScoreFirstSet + match.blackTeamScoreSecondSet)
-              - (match.redTeamScoreFirstSet   + match.redTeamScoreSecondSet)
+        // 3) Aggregate net scores from each match
+        completedMatches.forEach { match in
+            let blackMinusRed = (match.blackTeamScoreFirstSet + match.blackTeamScoreSecondSet) -
+                                (match.redTeamScoreFirstSet + match.redTeamScoreSecondSet)
 
-            // The 4 players in this match
-            let playersInMatch = [
-                match.player1,
-                match.player2,
-                match.player3,
-                match.player4
-            ]
+            let playersInMatch = [match.player1, match.player2, match.player3, match.player4]
 
-            for matchPlayer in playersInMatch {
-                // Find the participant record that links this player to this session
-                if let sp = allParticipants.first(where: { p in
-                    p.player.id == matchPlayer.id &&
-                    p.session.uniqueIdentifier == match.session.uniqueIdentifier
-                }) {
-                    let netScore = (sp.team == .Black) ? blackMinusRed : -blackMinusRed
+            playersInMatch.forEach { matchPlayer in
+                guard let participant = allParticipants.first(where: {
+                    $0.player.id == matchPlayer.id &&
+                    $0.session.uniqueIdentifier == match.session.uniqueIdentifier
+                }) else { return }
 
-                    if var stats = playerStats[matchPlayer.id] {
-                        stats.totalNet += netScore
-                        stats.matchCount += 1
-                        playerStats[matchPlayer.id] = stats
-                    } else {
-                        // Fallback if we didn't have the player in the dictionary yet
-                        playerStats[matchPlayer.id] = (
-                            matchPlayer,
-                            [],
-                            netScore,
-                            1
-                        )
-                    }
+                let netScore = (participant.team == .Black) ? blackMinusRed : -blackMinusRed
+
+                if var stats = playerStats[matchPlayer.id] {
+                    stats.totalNet += netScore
+                    stats.matchCount += 1
+                    playerStats[matchPlayer.id] = stats
+                } else {
+                    playerStats[matchPlayer.id] = (
+                        matchPlayer,
+                        [],
+                        netScore,
+                        1
+                    )
                 }
             }
         }
 
-        // 4) Convert dictionary -> array and compute average
-        let results = playerStats.values.map { stats -> (Player, Int, Int, Double) in
-            let avg = stats.matchCount > 0
-                ? Double(stats.totalNet) / Double(stats.matchCount)
-                : 0.0
-            
-            return (
-                stats.player,
-                stats.sessionsAttended.count,
-                stats.matchCount,
-                avg
-            )
-        }
-        // Sort by name, or however you like
-        .sorted { $0.0.name < $1.0.name }
+        // 4) Compute average scores and prepare the final array
+        return playerStats.values
+            .map { stats -> (Player, Int, Int, Double) in
+                let avg = stats.matchCount > 0
+                    ? Double(stats.totalNet) / Double(stats.matchCount)
+                    : 0.0
 
-        return results
+                return (
+                    stats.player,
+                    stats.sessionsAttended.count,
+                    stats.matchCount,
+                    avg
+                )
+            }
+            .sorted { $0.player.name < $1.player.name }
     }
+
+    // MARK: - Body
 
     var body: some View {
         NavigationView {
@@ -139,7 +124,7 @@ struct SeasonalResultsView: View {
                         .frame(width: 80, alignment: .trailing)
                 }
                 .padding(.vertical, 10)
-                
+
                 // Rows
                 ForEach(aggregatedPlayers, id: \.player.id) { item in
                     HStack {
@@ -160,91 +145,85 @@ struct SeasonalResultsView: View {
     }
 }
 
-
 #Preview {
-    let schema = Schema([
-        Season.self,
-        Session.self,
-        Player.self,
-        SessionParticipants.self,
-        DoublesMatch.self // Include if needed, but not strictly necessary if we’re only counting sessions attended
-    ])
-    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-    
     do {
-        let mockContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
-        let context = mockContainer.mainContext
-        
-        // Create a season
+        let schema = Schema([
+            Season.self,
+            Session.self,
+            Player.self,
+            SessionParticipants.self,
+            DoublesMatch.self
+        ])
+        let modelConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: schema, configurations: [modelConfig])
+        let context = container.mainContext
+
+        // Create Season
         let season = Season(seasonNumber: 4)
         context.insert(season)
-        
-        // Create two sessions for that season
-        let session1 = Session(sessionNumber: 1, season: season)
-        let session2 = Session(sessionNumber: 2, season: season)
-        context.insert(session1)
-        context.insert(session2)
 
-        // Create some players
-        let shin = Player(name: "Shin")
-        let suan = Player(name: "Suan")
-        let chris = Player(name: "Chris")
-        let cj = Player(name: "CJ")
-        context.insert(shin)
-        context.insert(suan)
-        context.insert(chris)
-        context.insert(cj)
+        // Create Sessions
+        let sessions = (1...2).map { Session(sessionNumber: $0, season: season) }
+        sessions.forEach { context.insert($0) }
 
-        // Assign players to session 1
-        context.insert(SessionParticipants(session: session1, player: shin, team: .Black))
-        context.insert(SessionParticipants(session: session1, player: suan, team: .Red))
-        context.insert(SessionParticipants(session: session1, player: chris, team: .Red))
-        context.insert(SessionParticipants(session: session1, player: cj, team: .Black))
-        
-        // Assign players to session 2
-        context.insert(SessionParticipants(session: session2, player: shin, team: .Red))
-        context.insert(SessionParticipants(session: session2, player: suan, team: .Red))
-        context.insert(SessionParticipants(session: session2, player: chris, team: .Black))
-        context.insert(SessionParticipants(session: session2, player: cj, team: .Black))
-        
-        let match1 = DoublesMatch(
-            session: session1,
-            waveNumber: 1,
-            player1: shin,
-            player2: suan,
-            player3: chris,
-            player4: cj,
-            redTeamScoreFirstSet: 21,
-            blackTeamScoreFirstSet: 15,
-            isComplete: true
-        )
-        let match2 = DoublesMatch(
-            session: session2,
-            waveNumber: 1,
-            player1: suan,
-            player2: shin,
-            player3: chris,
-            player4: cj
-        )
-        let match3 = DoublesMatch(
-            session: session1,
-            waveNumber: 2,
-            player1: suan,
-            player2: shin,
-            player3: chris,
-            player4: cj,
-            redTeamScoreFirstSet: 18,
-            blackTeamScoreFirstSet: 22,
-            isComplete: true
-        )
-        context.insert(match1)
-        context.insert(match2)
-        context.insert(match3)
+        // Create Players
+        let playerNames = ["Shin", "Suan", "Chris", "CJ"]
+        let players = playerNames.map { Player(name: $0) }
+        players.forEach { context.insert($0) }
 
-        // Show results for season #4
+        // Assign Players to Sessions
+        let teamsSession1: [Team] = [.Black, .Red, .Red, .Black]
+        let teamsSession2: [Team] = [.Red, .Red, .Black, .Black]
+
+        let participantsSession1 = zip(players, teamsSession1).map {
+            SessionParticipants(session: sessions[0], player: $0.0, team: $0.1)
+        }
+        let participantsSession2 = zip(players, teamsSession2).map {
+            SessionParticipants(session: sessions[1], player: $0.0, team: $0.1)
+        }
+
+        (participantsSession1 + participantsSession2).forEach { context.insert($0) }
+
+        // Create DoublesMatches
+        let matches = [
+            DoublesMatch(
+                session: sessions[0],
+                waveNumber: 1,
+                player1: players[0],
+                player2: players[1],
+                player3: players[2],
+                player4: players[3],
+                redTeamScoreFirstSet: 21,
+                blackTeamScoreFirstSet: 15,
+                isComplete: true
+            ),
+            DoublesMatch(
+                session: sessions[1],
+                waveNumber: 1,
+                player1: players[1],
+                player2: players[0],
+                player3: players[2],
+                player4: players[3],
+                isComplete: false
+            ),
+            DoublesMatch(
+                session: sessions[0],
+                waveNumber: 2,
+                player1: players[1],
+                player2: players[0],
+                player3: players[2],
+                player4: players[3],
+                redTeamScoreFirstSet: 18,
+                blackTeamScoreFirstSet: 22,
+                isComplete: true
+            )
+        ]
+        matches.forEach { context.insert($0) }
+
+        // Display SeasonalResultsView for Season 4
         return SeasonalResultsView(seasonNumber: 4)
-            .modelContainer(mockContainer)
+            .modelContainer(container)
     } catch {
-        fatalError("Could not create ModelContainer: \(error)")
+        fatalError("Preview setup failed: \(error)")
     }
 }
