@@ -2,74 +2,62 @@ import SwiftUI
 import SwiftData
 
 struct SessionsView: View {
-    @Query(sort: \Season.seasonNumber, order: .forward)
-    private var seasons: [Season]
-    
-    @Query(sort: \Session.sessionNumber, order: .forward)
-    private var allSessions: [Session]
-    
+    @Query(sort: \Season.seasonNumber, order: .forward) private var seasons: [Season]
+    @Query(sort: \Session.sessionNumber, order: .forward) private var allSessions: [Session]
     @Environment(\.modelContext) private var modelContext
-    
+
     @State private var expandedSeasons: [Int: Bool] = [:]
     @State private var showAlert = false
     @State private var alertMessage = ""
-    
+
     var body: some View {
         NavigationView {
             VStack {
-                List {
-                    ForEach(seasons) { season in
-                        let isExpanded = Binding(
+                List(seasons) { season in
+                    SeasonAccordionView(
+                        isExpanded: Binding(
                             get: { expandedSeasons[season.seasonNumber] ?? false },
                             set: { expandedSeasons[season.seasonNumber] = $0 }
-                        )
-                        
-                        let sessionsForSeason = allSessions.filter { $0.season.id == season.id }
-                        
-                        SeasonAccordionView(
-                            isExpanded: isExpanded,
-                            seasonNumber: season.seasonNumber,
-                            sessions: sessionsForSeason,
-                            isCompleted: season.isCompleted,
-                            addSession: { addSession(to: season) },
-                            markComplete: { markSeasonComplete(season) }
-                        )
-                    }
+                        ),
+                        seasonNumber: season.seasonNumber,
+                        sessions: allSessions.filter { $0.season.id == season.id },
+                        isCompleted: season.isCompleted,
+                        addSession: { addSession(to: season) },
+                        markComplete: { markSeasonComplete(season) }
+                    )
                 }
                 .listStyle(InsetGroupedListStyle())
-                
-                VStack(spacing: 10) {
-                    Button(action: addNewSeason) {
-                        Text("Add New Season")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                    }
-                }
-                .padding()
+
+                Button("Add New Season", action: addNewSeason)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .padding()
             }
             .navigationTitle("Sessions")
-            .alert(isPresented: $showAlert) {
-                Alert(title: Text("Cannot Add Season"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            .alert("Cannot Add Season", isPresented: $showAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(alertMessage)
             }
         }
     }
-    
+
     // MARK: - Actions
-    
+
     private func addNewSeason() {
-        guard seasons.allSatisfy({ $0.isCompleted }) else {
+        guard seasons.allSatisfy(\.isCompleted) else {
             alertMessage = "All previous seasons must be marked as completed before adding a new season."
             showAlert = true
             return
         }
-        
+
         let nextSeasonNumber = (seasons.map { $0.seasonNumber }.max() ?? 0) + 1
         let newSeason = Season(seasonNumber: nextSeasonNumber)
         modelContext.insert(newSeason)
-        
+
         do {
             try modelContext.save()
             print("New season added: Season \(nextSeasonNumber)")
@@ -78,7 +66,7 @@ struct SessionsView: View {
             showAlert = true
         }
     }
-    
+
     private func addSession(to season: Season) {
         let nextSessionNumber = (allSessions
                                     .filter { $0.season.id == season.id }
@@ -86,7 +74,7 @@ struct SessionsView: View {
                                     .max() ?? 0) + 1
         let newSession = Session(sessionNumber: nextSessionNumber, season: season)
         modelContext.insert(newSession)
-        
+
         do {
             try modelContext.save()
             print("New session added: Session \(nextSessionNumber) for Season \(season.seasonNumber)")
@@ -95,14 +83,14 @@ struct SessionsView: View {
             showAlert = true
         }
     }
-    
+
     private func markSeasonComplete(_ season: Season) {
         guard let index = seasons.firstIndex(where: { $0.id == season.id }) else { return }
-        let updatedSeason = seasons[index]
+        var updatedSeason = seasons[index]
         updatedSeason.isCompleted = true
-        
+        modelContext.insert(updatedSeason)
+
         do {
-            modelContext.insert(updatedSeason)
             try modelContext.save()
             print("Season \(season.seasonNumber) marked as complete")
         } catch {
@@ -119,68 +107,60 @@ struct SeasonAccordionView: View {
     let isCompleted: Bool
     let addSession: () -> Void
     let markComplete: () -> Void
-    
+
     var body: some View {
-        DisclosureGroup(
-            isExpanded: $isExpanded,
-            content: {
-                if !sessions.isEmpty {
-                    ForEach(sessions) { session in
-                        NavigationLink(destination: SessionDetailView(session: session)) {
-                            HStack {
-                                Image(systemName: "calendar.circle.fill")
-                                Text("Session \(session.sessionNumber)")
-                                    .font(.body)
-                            }
-                            .padding(.vertical, 5)
+        DisclosureGroup(isExpanded: $isExpanded) {
+            if sessions.isEmpty {
+                Text("No sessions")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                    .padding(.vertical, 5)
+            } else {
+                ForEach(sessions) { session in
+                    NavigationLink(destination: SessionDetailView(session: session)) {
+                        HStack {
+                            Image(systemName: "calendar.circle.fill")
+                            Text("Session \(session.sessionNumber)")
+                                .font(.body)
                         }
-                    }
-                } else {
-                    Text("No sessions")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
                         .padding(.vertical, 5)
-                }
-                
-                if !isCompleted {
-                    HStack(spacing: 20) {
-                        Button(action: addSession) {
-                            Text("Add Session")
-                                .padding(.vertical, 5)
-                                .padding(.horizontal, 10)
-                                .background(Color.green)
-                                .foregroundColor(.white)
-                                .cornerRadius(6)
-                                .font(.caption)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        Button(action: markComplete) {
-                            Text("Mark Complete")
-                                .padding(.vertical, 5)
-                                .padding(.horizontal, 10)
-                                .background(Color.orange)
-                                .foregroundColor(.white)
-                                .cornerRadius(6)
-                                .font(.caption)
-                        }
-                        .buttonStyle(PlainButtonStyle())
                     }
-                    .padding(.top, 10)
-                }
-            },
-            label: {
-                HStack {
-                    Text("Season \(seasonNumber)")
-                        .font(.headline)
-                        .foregroundColor(isCompleted ? .black : .blue)
-                    Spacer()
-                    Text(isCompleted ? "Completed" : "In Progress")
-                        .font(.subheadline)
-                        .foregroundColor(isCompleted ? .black : .blue)
                 }
             }
-        )
+
+            if !isCompleted {
+                HStack(spacing: 20) {
+                    Button("Add Session", action: addSession)
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.vertical, 5)
+                        .padding(.horizontal, 10)
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(6)
+                        .font(.caption)
+
+                    Button("Mark Complete", action: markComplete)
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.vertical, 5)
+                        .padding(.horizontal, 10)
+                        .background(Color.orange)
+                        .foregroundColor(.white)
+                        .cornerRadius(6)
+                        .font(.caption)
+                }
+                .padding(.top, 10)
+            }
+        } label: {
+            HStack {
+                Text("Season \(seasonNumber)")
+                    .font(.headline)
+                    .foregroundColor(isCompleted ? .black : .blue)
+                Spacer()
+                Text(isCompleted ? "Completed" : "In Progress")
+                    .font(.subheadline)
+                    .foregroundColor(isCompleted ? .black : .blue)
+            }
+        }
         .contentShape(Rectangle())
     }
 }
@@ -191,8 +171,6 @@ struct SeasonAccordionView: View {
     
     do {
         let mockContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
-        
-        // Insert Mock Data
         let context = mockContainer.mainContext
         
         let season1 = Season(seasonNumber: 1, isCompleted: true)
