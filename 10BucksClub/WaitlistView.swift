@@ -3,56 +3,128 @@ import SwiftData
 
 struct WaitlistView: View {
     @Environment(\.modelContext) private var modelContext
-    
+
+    // Waitlist query
     @Query(
         filter: #Predicate<Player> { player in
             player.statusRawValue == "On the Waitlist"
         },
-        sort: [SortDescriptor(\.waitlistPosition, order: .forward)]
+        sort: [SortDescriptor<Player>(\.waitlistPosition, order: .forward)]
     )
     private var waitlistPlayers: [Player]
 
+    // All seasons query
+    @Query(
+        sort: [SortDescriptor<Season>(\.seasonNumber, order: .reverse)]
+    )
+    private var allSeasons: [Season]
+
+    // All sessions query
+    @Query(
+        sort: [SortDescriptor<Session>(\.sessionNumber, order: .reverse)]
+    )
+    private var allSessions: [Session]
+
+    // All session participants query
+    @Query
+    private var allParticipants: [SessionParticipants]
+
+    // Computed Properties
+    private var latestSeason: Season? {
+        allSeasons.first
+    }
+
+    private var latestSession: Session? {
+        guard let season = latestSeason else { return nil }
+        return allSessions.first { $0.season == season }
+    }
+
+    private var sessionParticipants: [SessionParticipants] {
+        guard let session = latestSession else { return [] }
+        return allParticipants.filter { $0.session == session }
+    }
+
     var body: some View {
         NavigationView {
-            List {
-                ForEach(waitlistPlayers) { player in
-                    HStack {
-                        Image(systemName: "person.circle.fill")
-                            .resizable()
-                            .frame(width: 40, height: 40)
-                            .foregroundColor(.blue)
-    
-                        VStack(alignment: .leading) {
-                            Text(player.name)
-                                .font(.headline)
-                            if let pos = player.waitlistPosition {
-                                Text("Position: \(pos)")
-                                    .foregroundColor(.gray)
-                                    .font(.caption)
+            VStack {
+                // Display Latest Season
+                if let season = latestSeason {
+                    Text("Latest Season: \(season.seasonNumber)")
+                        .font(.headline)
+                        .padding()
+                } else {
+                    Text("No active seasons.")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .padding()
+                }
+
+                // Display Latest Session
+                if let session = latestSession {
+                    Text("Latest Session: \(session.sessionNumber)")
+                        .font(.headline)
+                        .padding()
+                } else {
+                    Text("No active sessions.")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .padding()
+                }
+
+                // Display Participants of the Latest Session
+                if sessionParticipants.isEmpty {
+                    Text("No participants in the latest session.")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .padding()
+                } else {
+                    List(sessionParticipants, id: \.compositeKey) { participant in
+                        Text("Player: \(participant.player.name), Team: \(participant.team.rawValue)")
+                    }
+                    .listStyle(InsetGroupedListStyle())
+                }
+
+                // Waitlist Section
+                List {
+                    ForEach(waitlistPlayers) { player in
+                        HStack {
+                            Image(systemName: "person.circle.fill")
+                                .resizable()
+                                .frame(width: 40, height: 40)
+                                .foregroundColor(.blue)
+
+                            VStack(alignment: .leading) {
+                                Text(player.name)
+                                    .font(.headline)
+                                if let pos = player.waitlistPosition {
+                                    Text("Position: \(pos)")
+                                        .foregroundColor(.gray)
+                                        .font(.caption)
+                                }
                             }
                         }
-                    }
-                    .padding(.vertical, 5)
-                    .swipeActions(edge: .trailing) {
-                        // Remove from Waitlist Action
-                        Button(role: .destructive) {
-                            removeFromWaitlist(player)
-                        } label: {
-                            Label("Remove", systemImage: "trash")
+                        .padding(.vertical, 5)
+                        .swipeActions(edge: .trailing) {
+                            // Remove from Waitlist Action
+                            Button(role: .destructive) {
+                                removeFromWaitlist(player)
+                            } label: {
+                                Label("Remove", systemImage: "trash")
+                            }
+
+                            // Move to Bottom Action
+                            Button {
+                                moveToBottom(player)
+                            } label: {
+                                Label("Move to Bottom", systemImage: "arrow.down")
+                            }
+                            .tint(.blue)
                         }
-                        
-                        // Move to Bottom Action
-                        Button {
-                            moveToBottom(player)
-                        } label: {
-                            Label("Move to Bottom", systemImage: "arrow.down")
-                        }
-                        .tint(.blue)
                     }
                 }
+                .listStyle(InsetGroupedListStyle())
+                .navigationTitle("Waitlist")
             }
-            .listStyle(InsetGroupedListStyle())
-            .navigationTitle("Waitlist")
             .alert("Operation Failed", isPresented: $showingAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -60,30 +132,27 @@ struct WaitlistView: View {
             }
         }
     }
-    
+
     // MARK: - Alert Properties
     @State private var showingAlert = false
     @State private var alertMessage = ""
-    
+
+    // MARK: - Helper Methods
+
     /// Removes a player from the waitlist and updates other players' positions.
     private func removeFromWaitlist(_ player: Player) {
         guard let removedPosition = player.waitlistPosition else { return }
-        
-        // Update player's status and remove waitlistPosition
+
         player.status = .notInSession
         player.waitlistPosition = nil
-        
-        // Find all players below the removed player in the waitlist
+
         let affectedPlayers = waitlistPlayers.filter { ($0.waitlistPosition ?? 0) > removedPosition }
-        
-        // Decrement waitlistPosition for affected players
         for affectedPlayer in affectedPlayers {
             if let currentPos = affectedPlayer.waitlistPosition {
                 affectedPlayer.waitlistPosition = currentPos - 1
             }
         }
-        
-        // Save changes to the context
+
         do {
             try modelContext.save()
         } catch {
@@ -91,29 +160,21 @@ struct WaitlistView: View {
             showingAlert = true
         }
     }
-    
-    /// Moves a player to the bottom of the waitlist by updating their waitlistPosition
-    /// and adjusting the positions of other players accordingly.
+
+    /// Moves a player to the bottom of the waitlist by updating their waitlistPosition.
     private func moveToBottom(_ player: Player) {
         guard let currentPosition = player.waitlistPosition else { return }
-        
-        // Find all players below the current player
+
         let playersBelow = waitlistPlayers.filter { ($0.waitlistPosition ?? 0) > currentPosition }
-        
-        // Decrement waitlistPosition for players below the moving player
         for belowPlayer in playersBelow {
             if let pos = belowPlayer.waitlistPosition {
                 belowPlayer.waitlistPosition = pos - 1
             }
         }
-        
-        // Determine the new maximum waitlistPosition after shifting
+
         let newMaxPosition = waitlistPlayers.count
-        
-        // Assign the moving player to the new maximum position
         player.waitlistPosition = newMaxPosition
-        
-        // Save changes to the context
+
         do {
             try modelContext.save()
         } catch {
@@ -124,14 +185,19 @@ struct WaitlistView: View {
 }
 
 #Preview {
-    let schema = Schema([Player.self])
+    let schema = Schema([Player.self, Season.self, Session.self, SessionParticipants.self])
     let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
 
     do {
         let mockContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
 
-        // Insert Mock Data
         let context = mockContainer.mainContext
+        let season1 = Season(seasonNumber: 1)
+        context.insert(season1)
+        let season2 = Season(seasonNumber: 2)
+        context.insert(season2)
+        context.insert(Session(sessionNumber: 1, season: season1))
+        context.insert(Session(sessionNumber: 2, season: season1))
         context.insert(Player(name: "Alice", status: .playing))
         context.insert(Player(name: "Bob", status: .onWaitlist, waitlistPosition: 2))
         context.insert(Player(name: "Charlie", status: .onWaitlist, waitlistPosition: 3))
