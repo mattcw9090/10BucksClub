@@ -214,9 +214,9 @@ struct SeasonAccordionView: View {
         let context = mockContainer.mainContext
         
         let season1 = Season(seasonNumber: 1, isCompleted: true)
-        context.insert(season1)
+//        context.insert(season1)
         let session1 = Session(sessionNumber: 1, season: season1)
-        context.insert(session1)
+//        context.insert(session1)
         
         return SessionsView()
             .modelContainer(mockContainer)

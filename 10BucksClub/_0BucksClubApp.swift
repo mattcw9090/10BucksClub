@@ -4,7 +4,7 @@ import SwiftData
 @main
 struct _0BucksClubApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([Player.self])
+        let schema = Schema([Player.self, Season.self, Session.self, SessionParticipants.self, DoublesMatch.self])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
