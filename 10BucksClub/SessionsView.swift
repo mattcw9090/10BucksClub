@@ -13,28 +13,67 @@ struct SessionsView: View {
     var body: some View {
         NavigationView {
             VStack {
-                List(seasons) { season in
-                    SeasonAccordionView(
-                        isExpanded: Binding(
-                            get: { expandedSeasons[season.seasonNumber] ?? false },
-                            set: { expandedSeasons[season.seasonNumber] = $0 }
-                        ),
-                        seasonNumber: season.seasonNumber,
-                        sessions: allSessions.filter { $0.season.id == season.id },
-                        isCompleted: season.isCompleted,
-                        addSession: { addSession(to: season) },
-                        markComplete: { markSeasonComplete(season) }
-                    )
+                if seasons.isEmpty {
+                    // Empty state view
+                    VStack(spacing: 20) {
+                        Image(systemName: "tray")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100, height: 100)
+                            .foregroundColor(.gray)
+                            .accessibilityHidden(true)
+                        
+                        Text("No Seasons Available")
+                            .font(.title2)
+                            .foregroundColor(.gray)
+                            .accessibilityLabel("No Seasons Available")
+                        
+                        Text("Start by adding a new season to get started.")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                            .accessibilityLabel("Start by adding a new season to get started.")
+                        
+                        Button(action: addNewSeason) {
+                            Text("Add New Season")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                        }
+                        .padding(.horizontal)
+                        .accessibilityLabel("Add New Season")
+                    }
+                    .padding()
+                    .transition(.opacity)
+                } else {
+                    // List of seasons
+                    List(seasons) { season in
+                        SeasonAccordionView(
+                            isExpanded: Binding(
+                                get: { expandedSeasons[season.seasonNumber] ?? false },
+                                set: { expandedSeasons[season.seasonNumber] = $0 }
+                            ),
+                            seasonNumber: season.seasonNumber,
+                            sessions: allSessions.filter { $0.season.id == season.id },
+                            isCompleted: season.isCompleted,
+                            addSession: { addSession(to: season) },
+                            markComplete: { markSeasonComplete(season) }
+                        )
+                    }
+                    .listStyle(InsetGroupedListStyle())
+                    
+                    Button("Add New Season", action: addNewSeason)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        .padding()
                 }
-                .listStyle(InsetGroupedListStyle())
-
-                Button("Add New Season", action: addNewSeason)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-                    .padding()
             }
             .navigationTitle("Sessions")
             .alert("Cannot Add Season", isPresented: $showAlert) {
@@ -42,6 +81,7 @@ struct SessionsView: View {
             } message: {
                 Text(alertMessage)
             }
+            .animation(.default, value: seasons.isEmpty)
         }
     }
 
