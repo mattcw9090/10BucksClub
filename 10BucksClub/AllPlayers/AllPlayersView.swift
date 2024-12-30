@@ -26,7 +26,7 @@ struct AllPlayersView: View {
                         PlayerRowView(player: player)
                     }
                     .swipeActions(edge: .trailing) {
-                        if player.status != .onWaitlist {
+                        if player.status == .notInSession {
                             Button {
                                 addToWaitlist(player)
                             } label: {
