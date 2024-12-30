@@ -5,6 +5,14 @@ struct AllPlayersView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Player.name) private var allPlayers: [Player]
     
+    @Query(
+        filter: #Predicate<Player> { player in
+            player.statusRawValue == "On the Waitlist"
+        },
+        sort: [SortDescriptor(\.waitlistPosition, order: .forward)]
+    )
+    private var waitlistPlayers: [Player]
+    
     @State private var showingAddPlayerSheet = false
     @State private var selectedPlayerForEditing: Player?
     
@@ -17,11 +25,14 @@ struct AllPlayersView: View {
                     } label: {
                         PlayerRowView(player: player)
                     }
-                    .swipeActions {
-                        Button(role: .destructive) {
-                            deletePlayer(player)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+                    .swipeActions(edge: .trailing) {
+                        if player.status != .onWaitlist {
+                            Button {
+                                addToWaitlist(player)
+                            } label: {
+                                Label("Add to Waitlist", systemImage: "list.bullet")
+                            }
+                            .tint(.orange)
                         }
                     }
                 }
@@ -46,8 +57,17 @@ struct AllPlayersView: View {
         }
     }
     
-    private func deletePlayer(_ player: Player) {
-        modelContext.delete(player)
+    // Function to Add Player to Waitlist
+    private func addToWaitlist(_ player: Player) {
+        player.status = .onWaitlist
+        let nextPosition = (waitlistPlayers.map { $0.waitlistPosition ?? 0 }.max() ?? 0) + 1
+        player.waitlistPosition = nextPosition
+        
+        do {
+            try modelContext.save()
+        } catch {
+            print("Error adding player to waitlist: \(error)")
+        }
     }
 }
 
@@ -61,8 +81,9 @@ struct AllPlayersView: View {
         // Insert Mock Data
         let context = mockContainer.mainContext
         context.insert(Player(name: "Alice", status: .playing))
-        context.insert(Player(name: "Bob", status: .onWaitlist, waitlistPosition: 1))
+        context.insert(Player(name: "Bob", status: .onWaitlist, waitlistPosition: 2))
         context.insert(Player(name: "Charlie", status: .notInSession))
+        context.insert(Player(name: "Denise", status: .onWaitlist, waitlistPosition: 1))
 
         return AllPlayersView()
             .modelContainer(mockContainer)
