@@ -80,7 +80,7 @@ struct WaitlistView: View {
                             .padding()
                     } else {
                         List(participants, id: \.compositeKey) { participant in
-                            Text("Player: \(participant.player.name), Team: \(participant.team.rawValue)")
+                            Text("Player: \(participant.player.name), Team: \(participant.team?.rawValue ?? "Unassigned")")
                         }
                         .listStyle(InsetGroupedListStyle())
                     }
@@ -113,11 +113,11 @@ struct WaitlistView: View {
                         }
                         .padding(.vertical, 5)
                         .swipeActions(edge: .trailing) {
-                            // Remove from Waitlist Action
-                            Button(role: .destructive) {
-                                removeFromWaitlist(player)
+                            // Move to Current Session
+                            Button {
+                                moveToCurrentSession(player)
                             } label: {
-                                Label("Remove", systemImage: "trash")
+                                Label("Move to Current Session", systemImage: "sportscourt")
                             }
 
                             // Move to Bottom Action
@@ -148,12 +148,21 @@ struct WaitlistView: View {
     // MARK: - Helper Methods
 
     /// Removes a player from the waitlist and updates other players' positions.
-    private func removeFromWaitlist(_ player: Player) {
+    private func moveToCurrentSession(_ player: Player) {
+        // Ensure there is an active session before making any changes
+        guard let session = latestSession, sessionParticipants != nil else {
+            alertMessage = "No active session to move the player into."
+            showingAlert = true
+            return
+        }
+
         guard let removedPosition = player.waitlistPosition else { return }
 
-        player.status = .notInSession
+        // Update the player's status and remove from waitlist
+        player.status = .playing
         player.waitlistPosition = nil
 
+        // Adjust positions of remaining players in the waitlist
         let affectedPlayers = waitlistPlayers.filter { ($0.waitlistPosition ?? 0) > removedPosition }
         for affectedPlayer in affectedPlayers {
             if let currentPos = affectedPlayer.waitlistPosition {
@@ -161,10 +170,15 @@ struct WaitlistView: View {
             }
         }
 
+        // Add the player to the session's participants without assigning a team
+        let sessionParticipantsRecord = SessionParticipants(session: session, player: player)
+        modelContext.insert(sessionParticipantsRecord)
+
+        // Save changes to the model context
         do {
             try modelContext.save()
         } catch {
-            alertMessage = "Failed to remove player from waitlist: \(error.localizedDescription)"
+            alertMessage = "Failed to move player to current session: \(error.localizedDescription)"
             showingAlert = true
         }
     }
@@ -204,7 +218,7 @@ struct WaitlistView: View {
         context.insert(season1)
         let season2 = Season(seasonNumber: 2)
         context.insert(season2)
-        context.insert(Session(sessionNumber: 1, season: season1))
+        context.insert(Session(sessionNumber: 1, season: season2))
         context.insert(Session(sessionNumber: 2, season: season1))
         context.insert(Player(name: "Alice", status: .playing))
         context.insert(Player(name: "Bob", status: .onWaitlist, waitlistPosition: 2))

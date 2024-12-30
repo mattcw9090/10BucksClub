@@ -15,15 +15,24 @@ struct TeamsView: View {
             List {
                 // Red Team Section
                 Section(header: teamHeader(text: "Red Team", color: .red)) {
-                    ForEach(redTeamMembers, id: \.id) { participant in
+                    ForEach(redTeamMembers, id: \.compositeKey) { participant in
                         TeamMemberRow(name: participant.player.name, team: .Red)
                     }
                 }
 
                 // Black Team Section
                 Section(header: teamHeader(text: "Black Team", color: .black)) {
-                    ForEach(blackTeamMembers, id: \.id) { participant in
+                    ForEach(blackTeamMembers, id: \.compositeKey) { participant in
                         TeamMemberRow(name: participant.player.name, team: .Black)
+                    }
+                }
+
+                // Unassigned Section
+                Section(header: teamHeader(text: "Unassigned", color: .gray)) {
+                    ForEach(unassignedMembers, id: \.compositeKey) { participant in
+                        Text(participant.player.name)
+                            .font(.body)
+                            .padding(.vertical, 5)
                     }
                 }
             }
@@ -39,6 +48,10 @@ struct TeamsView: View {
 
     private var blackTeamMembers: [SessionParticipants] {
         participants.filter { $0.team == .Black }
+    }
+    
+    private var unassignedMembers: [SessionParticipants] {
+        participants.filter { $0.team == nil }
     }
 
     // MARK: - UI Helpers
@@ -96,18 +109,22 @@ struct TeamMemberRow: View {
         let playerRed2 = Player(name: "Suan Sian Foo")
         let playerBlk  = Player(name: "Chris Fan")
         let playerBlk2 = Player(name: "CJ")
+        let playerUnassigned = Player(name: "Hoson")
         context.insert(playerRed)
         context.insert(playerRed2)
         context.insert(playerBlk)
         context.insert(playerBlk2)
+        context.insert(playerUnassigned)
         let p1 = SessionParticipants(session: session, player: playerRed,  team: .Red)
         let p2 = SessionParticipants(session: session, player: playerRed2, team: .Red)
         let p3 = SessionParticipants(session: session, player: playerBlk,  team: .Black)
         let p4 = SessionParticipants(session: session, player: playerBlk2, team: .Black)
+        let pUnassigned = SessionParticipants(session: session, player: playerUnassigned)
         context.insert(p1)
         context.insert(p2)
         context.insert(p3)
         context.insert(p4)
+        context.insert(pUnassigned)
         
         return TeamsView(session: session)
             .modelContainer(mockContainer)

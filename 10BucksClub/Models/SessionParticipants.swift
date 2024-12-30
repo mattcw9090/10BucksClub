@@ -17,18 +17,23 @@ class SessionParticipants {
     @Relationship
     var player: Player
     
-    var teamRawValue: String
-    var team: Team {
-        get { Team(rawValue: teamRawValue) ?? .Red }
-        set { teamRawValue = newValue.rawValue }
+    var teamRawValue: String?
+    var team: Team? {
+        get {
+            if let rawValue = teamRawValue {
+                return Team(rawValue: rawValue)
+            }
+            return nil // Unassigned team
+        }
+        set {
+            teamRawValue = newValue?.rawValue
+        }
     }
 
-    init(session: Session, player: Player, team: Team) {
+    init(session: Session, player: Player, team: Team? = nil) {
         self.session = session
         self.player = player
-        self.teamRawValue = team.rawValue
-
-        // Build a composite key like "2-5-UUID" so each (Session, Player) is unique.
+        self.teamRawValue = team?.rawValue
         self.compositeKey = "\(session.uniqueIdentifier)-\(player.id)"
     }
 }
