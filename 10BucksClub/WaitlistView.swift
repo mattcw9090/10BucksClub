@@ -39,8 +39,8 @@ struct WaitlistView: View {
         return allSessions.first { $0.season == season }
     }
 
-    private var sessionParticipants: [SessionParticipants] {
-        guard let session = latestSession else { return [] }
+    private var sessionParticipants: [SessionParticipants]? {
+        guard let session = latestSession else { return nil }
         return allParticipants.filter { $0.session == session }
     }
 
@@ -72,17 +72,25 @@ struct WaitlistView: View {
                 }
 
                 // Display Participants of the Latest Session
-                if sessionParticipants.isEmpty {
-                    Text("No participants in the latest session.")
+                if let participants = sessionParticipants {
+                    if participants.isEmpty {
+                        Text("No participants in the latest session.")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        List(participants, id: \.compositeKey) { participant in
+                            Text("Player: \(participant.player.name), Team: \(participant.team.rawValue)")
+                        }
+                        .listStyle(InsetGroupedListStyle())
+                    }
+                } else {
+                    Text("No session exists.")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                         .padding()
-                } else {
-                    List(sessionParticipants, id: \.compositeKey) { participant in
-                        Text("Player: \(participant.player.name), Team: \(participant.team.rawValue)")
-                    }
-                    .listStyle(InsetGroupedListStyle())
                 }
+
 
                 // Waitlist Section
                 List {
