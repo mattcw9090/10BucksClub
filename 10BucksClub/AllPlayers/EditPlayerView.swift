@@ -67,7 +67,7 @@ struct EditPlayerView: View {
                 player.waitlistPosition = nil
                 // Decrement waitlist positions for players below the removed position
                 let affectedPlayers = waitlistPlayers.filter { ($0.waitlistPosition ?? 0) > removedPosition }
-                for var affectedPlayer in affectedPlayers {
+                for affectedPlayer in affectedPlayers {
                     affectedPlayer.waitlistPosition? -= 1
                 }
             }
