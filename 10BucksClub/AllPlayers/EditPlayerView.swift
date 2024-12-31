@@ -1,5 +1,3 @@
-// File: 10BucksClub/AllPlayers/EditPlayerView.swift
-
 import SwiftUI
 import SwiftData
 
@@ -97,81 +95,42 @@ struct EditPlayerView: View {
     @State private var alertMessage = ""
 
     private func saveChanges() {
-        // Handle status change
-        if originalStatus == .notInSession && player.status == .onWaitlist {
-            let nextPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
-            player.waitlistPosition = nextPosition
+        switch (originalStatus, player.status) {
+        
+        case (.notInSession, .onWaitlist):
+            player.waitlistPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
             
-        } else if originalStatus == .onWaitlist && player.status == .notInSession {
+        case (.onWaitlist, .notInSession):
             guard let removedPosition = player.waitlistPosition else { return }
             player.waitlistPosition = nil
+            waitlistPlayers
+                .filter { ($0.waitlistPosition ?? 0) > removedPosition }
+                .forEach { $0.waitlistPosition? -= 1 }
             
-            let affectedPlayers = waitlistPlayers.filter { ($0.waitlistPosition ?? 0) > removedPosition }
-            for affectedPlayer in affectedPlayers {
-                if let currentPos = affectedPlayer.waitlistPosition {
-                    affectedPlayer.waitlistPosition = currentPos - 1
-                }
-            }
-            
-        } else if originalStatus == .notInSession && player.status == .playing {
+        case (.notInSession, .playing), (.onWaitlist, .playing):
             guard let session = latestSession, sessionParticipants != nil else {
                 alertMessage = "No active session to move the player into."
                 showingAlert = true
                 return
             }
-
-            // Add the player to the session's participants without assigning a team
-            let sessionParticipantsRecord = SessionParticipants(session: session, player: player)
-            modelContext.insert(sessionParticipantsRecord)
             
-        } else if originalStatus == .onWaitlist && player.status == .playing {
-            guard let session = latestSession, sessionParticipants != nil else {
-                alertMessage = "No active session to move the player into."
-                showingAlert = true
-                return
+            if originalStatus == .onWaitlist, let removedPosition = player.waitlistPosition {
+                player.status = .playing
+                player.waitlistPosition = nil
+                waitlistPlayers
+                    .filter { ($0.waitlistPosition ?? 0) > removedPosition }
+                    .forEach { $0.waitlistPosition? -= 1 }
             }
-
-            guard let removedPosition = player.waitlistPosition else { return }
-
-            // Update the player's status and remove from waitlist
-            player.status = .playing
-            player.waitlistPosition = nil
-
-            // Adjust positions of remaining players in the waitlist
-            let affectedPlayers = waitlistPlayers.filter { ($0.waitlistPosition ?? 0) > removedPosition }
-            for affectedPlayer in affectedPlayers {
-                if let currentPos = affectedPlayer.waitlistPosition {
-                    affectedPlayer.waitlistPosition = currentPos - 1
-                }
-            }
-
-            // Add the player to the session's participants without assigning a team
-            let sessionParticipantsRecord = SessionParticipants(session: session, player: player)
-            modelContext.insert(sessionParticipantsRecord)
             
-        } else if originalStatus == .playing && player.status == .notInSession {
+            modelContext.insert(SessionParticipants(session: session, player: player))
+            
+        case (.playing, .notInSession), (.playing, .onWaitlist):
             guard let session = latestSession, let sessionParticipants = sessionParticipants else {
                 alertMessage = "No active session to remove the player from."
                 showingAlert = true
                 return
             }
             
-            // Find the SessionParticipants record for this player and session
-            if let participantRecord = sessionParticipants.first(where: { $0.player == player && $0.session == session }) {
-                modelContext.delete(participantRecord)
-            } else {
-                alertMessage = "Player is not found in the current session participants."
-                showingAlert = true
-            }
-            
-        } else if originalStatus == .playing && player.status == .onWaitlist {
-            guard let session = latestSession, let sessionParticipants = sessionParticipants else {
-                alertMessage = "No active session to remove the player from."
-                showingAlert = true
-                return
-            }
-            
-            // Find the SessionParticipants record for this player and session
             if let participantRecord = sessionParticipants.first(where: { $0.player == player && $0.session == session }) {
                 modelContext.delete(participantRecord)
             } else {
@@ -180,10 +139,14 @@ struct EditPlayerView: View {
                 return
             }
             
-            let nextPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
-            player.waitlistPosition = nextPosition
+            if originalStatus == .playing, player.status == .onWaitlist {
+                player.waitlistPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
+            }
+            
+        default:
+            break
         }
-
+        
         // Save the context to persist changes
         do {
             try modelContext.save()
