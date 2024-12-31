@@ -113,7 +113,7 @@ struct WaitlistView: View {
                         }
                         .padding(.vertical, 5)
                         .swipeActions(edge: .trailing) {
-                            // Move to Current Session
+                            // Move to Current Session Action
                             Button {
                                 moveToCurrentSession(player)
                             } label: {
@@ -127,6 +127,14 @@ struct WaitlistView: View {
                                 Label("Move to Bottom", systemImage: "arrow.down")
                             }
                             .tint(.blue)
+                        }
+                        .swipeActions(edge: .leading) {
+                            // Remove from Waitlist Action
+                            Button {
+                                removeFromWaitlist(player)
+                            } label: {
+                                Label("Remove from Waitlist", systemImage: "minus.circle")
+                            }
                         }
                     }
                 }
@@ -201,6 +209,31 @@ struct WaitlistView: View {
             try modelContext.save()
         } catch {
             alertMessage = "Failed to move player to bottom of waitlist: \(error.localizedDescription)"
+            showingAlert = true
+        }
+    }
+    
+    /// Removes a player from the waitlist
+    private func removeFromWaitlist(_ player: Player) {
+        guard let removedPosition = player.waitlistPosition else { return }
+        
+        // Update the player's status and remove from waitlist
+        player.status = .notInSession
+        player.waitlistPosition = nil
+        
+        // Adjust positions of remaining players in the waitlist
+        let affectedPlayers = waitlistPlayers.filter { ($0.waitlistPosition ?? 0) > removedPosition }
+        for affectedPlayer in affectedPlayers {
+            if let currentPos = affectedPlayer.waitlistPosition {
+                affectedPlayer.waitlistPosition = currentPos - 1
+            }
+        }
+        
+        // Save changes to the model context
+        do {
+            try modelContext.save()
+        } catch {
+            alertMessage = "Failed to remove player from waitlist: \(error.localizedDescription)"
             showingAlert = true
         }
     }
