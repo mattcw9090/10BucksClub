@@ -19,6 +19,37 @@ struct EditPlayerView: View {
 
     // Track the original status to handle status changes
     @State private var originalStatus: Player.PlayerStatus = .notInSession
+    
+    // All seasons query
+    @Query(
+        sort: [SortDescriptor<Season>(\.seasonNumber, order: .reverse)]
+    )
+    private var allSeasons: [Season]
+
+    // All sessions query
+    @Query(
+        sort: [SortDescriptor<Session>(\.sessionNumber, order: .reverse)]
+    )
+    private var allSessions: [Session]
+
+    // All session participants query
+    @Query
+    private var allParticipants: [SessionParticipants]
+
+    // Computed Properties
+    private var latestSeason: Season? {
+        allSeasons.first
+    }
+
+    private var latestSession: Session? {
+        guard let season = latestSeason else { return nil }
+        return allSessions.first { $0.season == season }
+    }
+
+    private var sessionParticipants: [SessionParticipants]? {
+        guard let session = latestSession else { return nil }
+        return allParticipants.filter { $0.session == session }
+    }
 
     var body: some View {
         NavigationView {
@@ -57,22 +88,20 @@ struct EditPlayerView: View {
 
     private func saveChanges() {
         // Handle status change
-        if originalStatus != .onWaitlist && player.status == .onWaitlist {
-            // Player is being added to the waitlist
+        if originalStatus == .notInSession && player.status == .onWaitlist {
             let nextPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
             player.waitlistPosition = nextPosition
-        } else if originalStatus == .onWaitlist && player.status != .onWaitlist {
-            // Player is being removed from the waitlist
-            if let removedPosition = player.waitlistPosition {
-                player.waitlistPosition = nil
-                // Decrement waitlist positions for players below the removed position
-                let affectedPlayers = waitlistPlayers.filter { ($0.waitlistPosition ?? 0) > removedPosition }
-                for affectedPlayer in affectedPlayers {
-                    affectedPlayer.waitlistPosition? -= 1
+        } else if originalStatus == .onWaitlist && player.status == .notInSession {
+            guard let removedPosition = player.waitlistPosition else { return }
+            player.waitlistPosition = nil
+            
+            let affectedPlayers = waitlistPlayers.filter { ($0.waitlistPosition ?? 0) > removedPosition }
+            for affectedPlayer in affectedPlayers {
+                if let currentPos = affectedPlayer.waitlistPosition {
+                    affectedPlayer.waitlistPosition = currentPos - 1
                 }
             }
         }
-        // If the player remains on the waitlist and the position is unchanged, do nothing
 
         // Save the context to persist changes
         do {
