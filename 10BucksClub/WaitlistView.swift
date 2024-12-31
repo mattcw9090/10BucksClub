@@ -47,50 +47,17 @@ struct WaitlistView: View {
     var body: some View {
         NavigationView {
             VStack {
-                // Display Latest Season
-                if let season = latestSeason {
-                    Text("Latest Season: \(season.seasonNumber)")
-                        .font(.headline)
-                        .padding()
-                } else {
-                    Text("No active seasons.")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                        .padding()
-                }
+                // Debugging Information
+                Text("Latest Season: \(latestSeason?.seasonNumber ?? -1)")
+                Text("Latest Session: \(latestSession?.sessionNumber ?? -1)")
 
-                // Display Latest Session
-                if let session = latestSession {
-                    Text("Latest Session: \(session.sessionNumber)")
-                        .font(.headline)
-                        .padding()
-                } else {
-                    Text("No active sessions.")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                        .padding()
-                }
-
-                // Display Participants of the Latest Session
                 if let participants = sessionParticipants {
-                    if participants.isEmpty {
-                        Text("No participants in the latest session.")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                            .padding()
-                    } else {
-                        List(participants, id: \.compositeKey) { participant in
-                            Text("Player: \(participant.player.name), Team: \(participant.team?.rawValue ?? "Unassigned")")
-                        }
-                        .listStyle(InsetGroupedListStyle())
+                    ForEach(participants, id: \.compositeKey) { participant in
+                        Text("Player: \(participant.player.name), Team: \(participant.team?.rawValue ?? "Unassigned")")
                     }
                 } else {
                     Text("No session exists.")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                        .padding()
                 }
-
 
                 // Waitlist Section
                 List {

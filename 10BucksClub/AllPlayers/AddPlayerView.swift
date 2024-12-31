@@ -16,12 +16,56 @@ struct AddPlayerView: View {
     )
     private var waitlistPlayers: [Player]
 
+    // All seasons query
+    @Query(
+        sort: [SortDescriptor<Season>(\.seasonNumber, order: .reverse)]
+    )
+    private var allSeasons: [Season]
+
+    // All sessions query
+    @Query(
+        sort: [SortDescriptor<Session>(\.sessionNumber, order: .reverse)]
+    )
+    private var allSessions: [Session]
+
+    // All session participants query
+    @Query
+    private var allParticipants: [SessionParticipants]
+
+    // Computed Properties
+    private var latestSeason: Season? {
+        allSeasons.first
+    }
+
+    private var latestSession: Session? {
+        guard let season = latestSeason else { return nil }
+        return allSessions.first { $0.season == season }
+    }
+
+    private var sessionParticipants: [SessionParticipants]? {
+        guard let session = latestSession else { return nil }
+        return allParticipants.filter { $0.session == session }
+    }
+
     var body: some View {
         NavigationView {
             Form {
+                // Debugging Information
+                Text("Latest Season: \(latestSeason?.seasonNumber ?? -1)")
+                Text("Latest Session: \(latestSession?.sessionNumber ?? -1)")
+
+                if let participants = sessionParticipants {
+                    ForEach(participants, id: \.compositeKey) { participant in
+                        Text("Player: \(participant.player.name), Team: \(participant.team?.rawValue ?? "Unassigned")")
+                    }
+                } else {
+                    Text("No session exists.")
+                }
+
+                // Form Fields
                 Section(header: Text("Player Details")) {
                     TextField("Name", text: $name)
-                    
+
                     Picker("Status", selection: $status) {
                         ForEach(Player.PlayerStatus.allCases, id: \.self) { status in
                             Text(status.rawValue.capitalized).tag(status)
@@ -49,7 +93,7 @@ struct AddPlayerView: View {
 
     private func addPlayer() {
         let newPlayer = Player(name: name, status: status)
-        
+
         if status == .onWaitlist {
             let nextPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
             newPlayer.waitlistPosition = nextPosition
