@@ -80,11 +80,21 @@ struct EditPlayerView: View {
                 }
             }
             .onAppear {
-                // Initialize the original status when the view appears
                 originalStatus = player.status
+            }
+            .alert(isPresented: $showingAlert) {
+                Alert(
+                    title: Text("Error"),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("OK"))
+                )
             }
         }
     }
+    
+    // MARK: - Alert Properties
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
 
     private func saveChanges() {
         // Handle status change
@@ -101,6 +111,16 @@ struct EditPlayerView: View {
                     affectedPlayer.waitlistPosition = currentPos - 1
                 }
             }
+        } else if originalStatus == .notInSession && player.status == .playing {
+            guard let session = latestSession, sessionParticipants != nil else {
+                alertMessage = "No active session to move the player into."
+                showingAlert = true
+                return
+            }
+
+            // Add the player to the session's participants without assigning a team
+            let sessionParticipantsRecord = SessionParticipants(session: session, player: player)
+            modelContext.insert(sessionParticipantsRecord)
         }
 
         // Save the context to persist changes
