@@ -88,22 +88,47 @@ struct AddPlayerView: View {
                     .disabled(name.isEmpty)
                 }
             }
+            .alert(isPresented: $showingAlert) {
+                Alert(
+                    title: Text("Error"),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
         }
     }
+    
+    // MARK: - Alert Properties
+    @State private var showingAlert = false
+    @State private var alertMessage = ""
 
     private func addPlayer() {
         let newPlayer = Player(name: name, status: status)
 
+        // Add player to the waitlist if status is .onWaitlist
         if status == .onWaitlist {
             let nextPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
             newPlayer.waitlistPosition = nextPosition
         }
+        // Add player to the current session if status is .playing
+        else if status == .playing {
+            guard let session = latestSession else {
+                alertMessage = "No active session exists to add the player."
+                showingAlert = true
+                return
+            }
+
+            let sessionParticipantsRecord = SessionParticipants(session: session, player: newPlayer)
+            modelContext.insert(sessionParticipantsRecord)
+        }
+
         modelContext.insert(newPlayer)
 
         do {
             try modelContext.save()
         } catch {
-            print("Failed to add player: \(error.localizedDescription)")
+            alertMessage = "Failed to save player: \(error.localizedDescription)"
+            showingAlert = true
         }
     }
 }
