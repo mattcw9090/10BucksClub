@@ -148,6 +148,21 @@ struct EditPlayerView: View {
             // Add the player to the session's participants without assigning a team
             let sessionParticipantsRecord = SessionParticipants(session: session, player: player)
             modelContext.insert(sessionParticipantsRecord)
+            
+        } else if originalStatus == .playing && player.status == .notInSession {
+            guard let session = latestSession, let sessionParticipants = sessionParticipants else {
+                alertMessage = "No active session to remove the player from."
+                showingAlert = true
+                return
+            }
+            
+            // Find the SessionParticipants record for this player and session
+            if let participantRecord = sessionParticipants.first(where: { $0.player == player && $0.session == session }) {
+                modelContext.delete(participantRecord)
+            } else {
+                alertMessage = "Player is not found in the current session participants."
+                showingAlert = true
+            }
         }
 
         // Save the context to persist changes
