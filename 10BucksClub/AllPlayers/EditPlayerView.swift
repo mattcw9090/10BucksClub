@@ -163,6 +163,25 @@ struct EditPlayerView: View {
                 alertMessage = "Player is not found in the current session participants."
                 showingAlert = true
             }
+            
+        } else if originalStatus == .playing && player.status == .onWaitlist {
+            guard let session = latestSession, let sessionParticipants = sessionParticipants else {
+                alertMessage = "No active session to remove the player from."
+                showingAlert = true
+                return
+            }
+            
+            // Find the SessionParticipants record for this player and session
+            if let participantRecord = sessionParticipants.first(where: { $0.player == player && $0.session == session }) {
+                modelContext.delete(participantRecord)
+            } else {
+                alertMessage = "Player is not found in the current session participants."
+                showingAlert = true
+                return
+            }
+            
+            let nextPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
+            player.waitlistPosition = nextPosition
         }
 
         // Save the context to persist changes
