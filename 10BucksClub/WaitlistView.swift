@@ -47,19 +47,6 @@ struct WaitlistView: View {
     var body: some View {
         NavigationView {
             VStack {
-                // Debugging Information
-                Text("Latest Season: \(latestSeason?.seasonNumber ?? -1)")
-                Text("Latest Session: \(latestSession?.sessionNumber ?? -1)")
-
-                if let participants = sessionParticipants {
-                    ForEach(participants, id: \.compositeKey) { participant in
-                        Text("Player: \(participant.player.name), Team: \(participant.team?.rawValue ?? "Unassigned")")
-                    }
-                } else {
-                    Text("No session exists.")
-                }
-
-                // Waitlist Section
                 List {
                     ForEach(waitlistPlayers) { player in
                         HStack {

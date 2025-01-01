@@ -50,19 +50,6 @@ struct AddPlayerView: View {
     var body: some View {
         NavigationView {
             Form {
-                // Debugging Information
-                Text("Latest Season: \(latestSeason?.seasonNumber ?? -1)")
-                Text("Latest Session: \(latestSession?.sessionNumber ?? -1)")
-
-                if let participants = sessionParticipants {
-                    ForEach(participants, id: \.compositeKey) { participant in
-                        Text("Player: \(participant.player.name), Team: \(participant.team?.rawValue ?? "Unassigned")")
-                    }
-                } else {
-                    Text("No session exists.")
-                }
-
-                // Form Fields
                 Section(header: Text("Player Details")) {
                     TextField("Name", text: $name)
 
