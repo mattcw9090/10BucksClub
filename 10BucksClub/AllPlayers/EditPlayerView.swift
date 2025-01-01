@@ -6,7 +6,7 @@ struct EditPlayerView: View {
     @Environment(\.modelContext) private var modelContext
 
     @Bindable var player: Player
-    
+
     @Query(sort: [SortDescriptor<Player>(\.name, order: .forward)])
     private var allPlayers: [Player]
 
@@ -17,7 +17,7 @@ struct EditPlayerView: View {
 
     // Track the original status to handle status changes
     @State private var originalStatus: Player.PlayerStatus = .notInSession
-    
+
     // All seasons query
     @Query(
         sort: [SortDescriptor<Season>(\.seasonNumber, order: .reverse)]
@@ -138,6 +138,13 @@ struct EditPlayerView: View {
                 return
             }
             
+            // Ensure player is unassigned before proceeding
+            if sessionParticipants.contains(where: { $0.player == player && $0.team != nil }) {
+                alertMessage = "Please unassign the player from the team before changing their status."
+                showingAlert = true
+                return
+            }
+            
             if let participantRecord = sessionParticipants.first(where: { $0.player == player && $0.session == session }) {
                 modelContext.delete(participantRecord)
             } else {
@@ -164,7 +171,7 @@ struct EditPlayerView: View {
 }
 
 #Preview {
-    let schema = Schema([Player.self])
+    let schema = Schema([Player.self, Season.self, Session.self, SessionParticipants.self])
     let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
 
     do {
@@ -172,11 +179,17 @@ struct EditPlayerView: View {
 
         // Insert Mock Data
         let context = mockContainer.mainContext
-        let playerToEdit = Player(name: "Charlie", status: .notInSession)
+        let playerToEdit = Player(name: "Charlie", status: .playing)
         context.insert(Player(name: "Alice", status: .playing))
         context.insert(Player(name: "Bob", status: .onWaitlist, waitlistPosition: 2))
         context.insert(playerToEdit)
         context.insert(Player(name: "Denise", status: .onWaitlist, waitlistPosition: 1))
+        let season = Season(seasonNumber: 1)
+        context.insert(season)
+        let session = Session(sessionNumber: 1, season: season)
+        context.insert(session)
+        let participant = SessionParticipants(session: session, player: playerToEdit, team: .Red)
+        context.insert(participant)
 
         return EditPlayerView(player: playerToEdit)
             .modelContainer(mockContainer)
