@@ -14,67 +14,84 @@ struct TeamsView: View {
 
     var body: some View {
         NavigationView {
-            List {
-                // Red Team Section
-                Section(header: teamHeader(text: "Red Team", color: .red)) {
-                    ForEach(redTeamMembers, id: \.compositeKey) { participant in
-                        TeamMemberRow(name: participant.player.name, team: .Red)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button("Unassign") {
-                                    participant.team = nil
-                                    saveContext()
+            VStack {
+                List {
+                    // Red Team Section
+                    Section(header: teamHeader(text: "Red Team", color: .red)) {
+                        ForEach(redTeamMembers, id: \.compositeKey) { participant in
+                            TeamMemberRow(name: participant.player.name, team: .Red)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button("Unassign") {
+                                        participant.team = nil
+                                        saveContext()
+                                    }
+                                    .tint(.gray)
+                                    Button("Black") {
+                                        participant.team = .Black
+                                        saveContext()
+                                    }
+                                    .tint(.black)
                                 }
-                                .tint(.gray)
-                                Button("Black") {
-                                    participant.team = .Black
-                                    saveContext()
+                        }
+                    }
+
+                    // Black Team Section
+                    Section(header: teamHeader(text: "Black Team", color: .black)) {
+                        ForEach(blackTeamMembers, id: \.compositeKey) { participant in
+                            TeamMemberRow(name: participant.player.name, team: .Black)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button("Unassign") {
+                                        participant.team = nil
+                                        saveContext()
+                                    }
+                                    .tint(.gray)
+                                    Button("Red") {
+                                        participant.team = .Red
+                                        saveContext()
+                                    }
+                                    .tint(.red)
                                 }
-                                .tint(.black)
-                            }
+                        }
+                    }
+
+                    // Unassigned Section
+                    Section(header: teamHeader(text: "Unassigned", color: .gray)) {
+                        ForEach(unassignedMembers, id: \.compositeKey) { participant in
+                            Text(participant.player.name)
+                                .font(.body)
+                                .padding(.vertical, 5)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button("Black") {
+                                        participant.team = .Black
+                                        saveContext()
+                                    }
+                                    .tint(.black)
+                                    Button("Red") {
+                                        participant.team = .Red
+                                        saveContext()
+                                    }
+                                    .tint(.red)
+                                }
+                        }
                     }
                 }
+                .listStyle(InsetGroupedListStyle())
 
-                // Black Team Section
-                Section(header: teamHeader(text: "Black Team", color: .black)) {
-                    ForEach(blackTeamMembers, id: \.compositeKey) { participant in
-                        TeamMemberRow(name: participant.player.name, team: .Black)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button("Unassign") {
-                                    participant.team = nil
-                                    saveContext()
-                                }
-                                .tint(.gray)
-                                Button("Red") {
-                                    participant.team = .Red
-                                    saveContext()
-                                }
-                                .tint(.red)
-                            }
-                    }
-                }
-
-                // Unassigned Section
-                Section(header: teamHeader(text: "Unassigned", color: .gray)) {
-                    ForEach(unassignedMembers, id: \.compositeKey) { participant in
-                        Text(participant.player.name)
-                            .font(.body)
-                            .padding(.vertical, 5)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button("Black") {
-                                    participant.team = .Black
-                                    saveContext()
-                                }
-                                .tint(.black)
-                                Button("Red") {
-                                    participant.team = .Red
-                                    saveContext()
-                                }
-                                .tint(.red)
-                            }
-                    }
+                // Generate Draws Button
+                Button(action: {
+                    // Action will be implemented later
+                    print("Generate Draws button tapped")
+                }) {
+                    Text("Generate Draws")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                        .padding()
                 }
             }
-            .listStyle(InsetGroupedListStyle())
         }
     }
     
@@ -114,7 +131,6 @@ struct TeamsView: View {
         }
     }
 }
-
 
 struct TeamMemberRow: View {
     let name: String
