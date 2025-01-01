@@ -1,10 +1,17 @@
 import SwiftUI
 import SwiftData
 
+struct AlertMessage: Identifiable {
+    let id = UUID()
+    let message: String
+}
+
 struct TeamsView: View {
     let session: Session
     
     @Environment(\.modelContext) private var context
+    
+    @State private var alertMessage: AlertMessage?
     
     @Query private var allParticipants: [SessionParticipants]
     
@@ -79,8 +86,9 @@ struct TeamsView: View {
 
                 // Generate Draws Button
                 Button(action: {
-                    // Action will be implemented later
-                    print("Generate Draws button tapped")
+                    if validateTeams() {
+                        alertMessage = AlertMessage(message: "Draws generated")
+                    }
                 }) {
                     Text("Generate Draws")
                         .font(.headline)
@@ -90,6 +98,9 @@ struct TeamsView: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                         .padding()
+                }
+                .alert(item: $alertMessage) { message in
+                    Alert(title: Text("Validation Result"), message: Text(message.message), dismissButton: .default(Text("OK")))
                 }
             }
         }
@@ -107,6 +118,32 @@ struct TeamsView: View {
     
     private var unassignedMembers: [SessionParticipants] {
         participants.filter { $0.team == nil }
+    }
+
+    // MARK: - Validation
+
+    private func validateTeams() -> Bool {
+        // Check for unassigned players
+        if !unassignedMembers.isEmpty {
+            alertMessage = AlertMessage(message: "There are unassigned players.")
+            return false
+        }
+
+        // Check total number of players
+        let totalPlayers = participants.count
+
+        if totalPlayers < 12 || totalPlayers % 2 != 0 {
+            alertMessage = AlertMessage(message: "Each team must have 6 players or more.")
+            return false
+        }
+
+        // Check if red team and black team have the same number of players
+        if redTeamMembers.count != blackTeamMembers.count {
+            alertMessage = AlertMessage(message: "Red team and Black team must have the same number of players.")
+            return false
+        }
+
+        return true
     }
 
     // MARK: - UI Helpers
