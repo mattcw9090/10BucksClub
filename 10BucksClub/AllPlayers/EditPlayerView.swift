@@ -102,6 +102,16 @@ struct EditPlayerView: View {
             return
         }
         
+        // **Added Validation: Ensure player is unassigned if changing from .playing**
+        if originalStatus == .playing && player.status != .playing {
+            if let sessionParticipants = sessionParticipants,
+               sessionParticipants.contains(where: { $0.player == player && $0.team != nil }) {
+                alertMessage = "Please unassign the player from the team before changing their status."
+                showingAlert = true
+                return
+            }
+        }
+        
         switch (originalStatus, player.status) {
         
         case (.notInSession, .onWaitlist):
@@ -134,13 +144,6 @@ struct EditPlayerView: View {
         case (.playing, .notInSession), (.playing, .onWaitlist):
             guard let session = latestSession, let sessionParticipants = sessionParticipants else {
                 alertMessage = "No active session to remove the player from."
-                showingAlert = true
-                return
-            }
-            
-            // Ensure player is unassigned before proceeding
-            if sessionParticipants.contains(where: { $0.player == player && $0.team != nil }) {
-                alertMessage = "Please unassign the player from the team before changing their status."
                 showingAlert = true
                 return
             }
@@ -179,7 +182,7 @@ struct EditPlayerView: View {
 
         // Insert Mock Data
         let context = mockContainer.mainContext
-        let playerToEdit = Player(name: "Charlie", status: .playing)
+        let playerToEdit = Player(name: "Charlie", status: .notInSession)
         context.insert(Player(name: "Alice", status: .playing))
         context.insert(Player(name: "Bob", status: .onWaitlist, waitlistPosition: 2))
         context.insert(playerToEdit)
