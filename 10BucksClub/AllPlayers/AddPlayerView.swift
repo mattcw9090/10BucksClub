@@ -7,14 +7,14 @@ struct AddPlayerView: View {
 
     @State private var name: String = ""
     @State private var status: Player.PlayerStatus = .notInSession
+    
+    @Query(sort: [SortDescriptor<Player>(\.name, order: .forward)])
+    private var allPlayers: [Player]
 
-    @Query(
-        filter: #Predicate<Player> { player in
-            player.statusRawValue == "On the Waitlist"
-        },
-        sort: [SortDescriptor(\.waitlistPosition, order: .forward)]
-    )
-    private var waitlistPlayers: [Player]
+    private var waitlistPlayers: [Player] {
+        allPlayers.filter { $0.status == .onWaitlist }
+                  .sorted { ($0.waitlistPosition ?? 0) < ($1.waitlistPosition ?? 0) }
+    }
 
     // All seasons query
     @Query(
@@ -90,6 +90,13 @@ struct AddPlayerView: View {
     @State private var alertMessage = ""
 
     private func addPlayer() {
+        // Ensure unique name validation
+        if allPlayers.contains(where: { $0.name == name }) {
+            alertMessage = "A player with the name '\(name)' already exists. Please choose a different name."
+            showingAlert = true
+            return
+        }
+        
         let newPlayer = Player(name: name, status: status)
 
         // Add player to the waitlist if status is .onWaitlist

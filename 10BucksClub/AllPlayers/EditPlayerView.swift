@@ -6,14 +6,14 @@ struct EditPlayerView: View {
     @Environment(\.modelContext) private var modelContext
 
     @Bindable var player: Player
+    
+    @Query(sort: [SortDescriptor<Player>(\.name, order: .forward)])
+    private var allPlayers: [Player]
 
-    @Query(
-        filter: #Predicate<Player> { player in
-            player.statusRawValue == "On the Waitlist"
-        },
-        sort: [SortDescriptor(\.waitlistPosition, order: .forward)]
-    )
-    private var waitlistPlayers: [Player]
+    private var waitlistPlayers: [Player] {
+        allPlayers.filter { $0.status == .onWaitlist }
+                  .sorted { ($0.waitlistPosition ?? 0) < ($1.waitlistPosition ?? 0) }
+    }
 
     // Track the original status to handle status changes
     @State private var originalStatus: Player.PlayerStatus = .notInSession
@@ -95,6 +95,13 @@ struct EditPlayerView: View {
     @State private var alertMessage = ""
 
     private func saveChanges() {
+        // Ensure unique name validation
+        if allPlayers.contains(where: { $0.name == player.name && $0.id != player.id }) {
+            alertMessage = "A player with the name '\(player.name)' already exists. Please choose a different name."
+            showingAlert = true
+            return
+        }
+        
         switch (originalStatus, player.status) {
         
         case (.notInSession, .onWaitlist):
