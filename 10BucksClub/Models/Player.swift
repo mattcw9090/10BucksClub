@@ -4,7 +4,7 @@ import SwiftData
 @Model
 class Player {
     @Attribute(.unique) var id: UUID
-    var name: String
+    @Attribute(.unique) var name: String
     var statusRawValue: String
     var waitlistPosition: Int?
     
