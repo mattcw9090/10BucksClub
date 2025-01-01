@@ -15,8 +15,9 @@ struct EditPlayerView: View {
                   .sorted { ($0.waitlistPosition ?? 0) < ($1.waitlistPosition ?? 0) }
     }
 
-    // Track the original status to handle status changes
-    @State private var originalStatus: Player.PlayerStatus = .notInSession
+    // Temporary state variables for editing
+    @State private var editedName: String = ""
+    @State private var editedStatus: Player.PlayerStatus = .notInSession
 
     // All seasons query
     @Query(
@@ -53,9 +54,9 @@ struct EditPlayerView: View {
         NavigationView {
             Form {
                 Section(header: Text("Player Details")) {
-                    TextField("Name", text: $player.name)
-                    
-                    Picker("Status", selection: $player.status) {
+                    TextField("Name", text: $editedName)
+
+                    Picker("Status", selection: $editedStatus) {
                         ForEach(Player.PlayerStatus.allCases, id: \.self) { status in
                             Text(status.rawValue.capitalized).tag(status)
                         }
@@ -72,13 +73,14 @@ struct EditPlayerView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         saveChanges()
-                        dismiss()
                     }
-                    .disabled(player.name.isEmpty)
+                    .disabled(editedName.isEmpty)
                 }
             }
             .onAppear {
-                originalStatus = player.status
+                // Initialize temporary variables with current player data
+                editedName = player.name
+                editedStatus = player.status
             }
             .alert(isPresented: $showingAlert) {
                 Alert(
@@ -96,14 +98,14 @@ struct EditPlayerView: View {
 
     private func saveChanges() {
         // Ensure unique name validation
-        if allPlayers.contains(where: { $0.name == player.name && $0.id != player.id }) {
-            alertMessage = "A player with the name '\(player.name)' already exists. Please choose a different name."
+        if allPlayers.contains(where: { $0.name == editedName && $0.id != player.id }) {
+            alertMessage = "A player with the name '\(editedName)' already exists. Please choose a different name."
             showingAlert = true
             return
         }
         
-        // **Added Validation: Ensure player is unassigned if changing from .playing**
-        if originalStatus == .playing && player.status != .playing {
+        // Ensure player is unassigned if changing from .playing
+        if player.status == .playing && editedStatus != .playing {
             if let sessionParticipants = sessionParticipants,
                sessionParticipants.contains(where: { $0.player == player && $0.team != nil }) {
                 alertMessage = "Please unassign the player from the team before changing their status."
@@ -112,7 +114,7 @@ struct EditPlayerView: View {
             }
         }
         
-        switch (originalStatus, player.status) {
+        switch (player.status, editedStatus) {
         
         case (.notInSession, .onWaitlist):
             player.waitlistPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
@@ -131,7 +133,7 @@ struct EditPlayerView: View {
                 return
             }
             
-            if originalStatus == .onWaitlist, let removedPosition = player.waitlistPosition {
+            if player.status == .onWaitlist, let removedPosition = player.waitlistPosition {
                 player.status = .playing
                 player.waitlistPosition = nil
                 waitlistPlayers
@@ -148,6 +150,14 @@ struct EditPlayerView: View {
                 return
             }
             
+            // Ensure player is unassigned before status change
+            if sessionParticipants.contains(where: { $0.player == player && $0.team != nil }) {
+                alertMessage = "Please unassign the player from the team before changing their status."
+                showingAlert = true
+                return
+            }
+            
+            // Proceed with removing the player from the session
             if let participantRecord = sessionParticipants.first(where: { $0.player == player && $0.session == session }) {
                 modelContext.delete(participantRecord)
             } else {
@@ -156,7 +166,7 @@ struct EditPlayerView: View {
                 return
             }
             
-            if originalStatus == .playing, player.status == .onWaitlist {
+            if editedStatus == .onWaitlist {
                 player.waitlistPosition = (waitlistPlayers.compactMap { $0.waitlistPosition }.max() ?? 0) + 1
             }
             
@@ -164,11 +174,17 @@ struct EditPlayerView: View {
             break
         }
         
+        // Apply changes from temporary variables to the player
+        player.name = editedName
+        player.status = editedStatus
+        
         // Save the context to persist changes
         do {
             try modelContext.save()
+            dismiss()
         } catch {
-            print("Failed to save changes: \(error.localizedDescription)")
+            alertMessage = "Failed to save changes: \(error.localizedDescription)"
+            showingAlert = true
         }
     }
 }
@@ -182,7 +198,7 @@ struct EditPlayerView: View {
 
         // Insert Mock Data
         let context = mockContainer.mainContext
-        let playerToEdit = Player(name: "Charlie", status: .notInSession)
+        let playerToEdit = Player(name: "Charlie", status: .playing)
         context.insert(Player(name: "Alice", status: .playing))
         context.insert(Player(name: "Bob", status: .onWaitlist, waitlistPosition: 2))
         context.insert(playerToEdit)
