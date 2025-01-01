@@ -3,13 +3,15 @@ import SwiftData
 
 struct TeamsView: View {
     let session: Session
-
+    
+    @Environment(\.modelContext) private var context
+    
     @Query private var allParticipants: [SessionParticipants]
     
     private var participants: [SessionParticipants] {
         allParticipants.filter { $0.session == session }
     }
-    
+
     var body: some View {
         NavigationView {
             List {
@@ -17,6 +19,18 @@ struct TeamsView: View {
                 Section(header: teamHeader(text: "Red Team", color: .red)) {
                     ForEach(redTeamMembers, id: \.compositeKey) { participant in
                         TeamMemberRow(name: participant.player.name, team: .Red)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button("Unassign") {
+                                    participant.team = nil
+                                    saveContext()
+                                }
+                                .tint(.gray)
+                                Button("Black") {
+                                    participant.team = .Black
+                                    saveContext()
+                                }
+                                .tint(.black)
+                            }
                     }
                 }
 
@@ -24,6 +38,18 @@ struct TeamsView: View {
                 Section(header: teamHeader(text: "Black Team", color: .black)) {
                     ForEach(blackTeamMembers, id: \.compositeKey) { participant in
                         TeamMemberRow(name: participant.player.name, team: .Black)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button("Unassign") {
+                                    participant.team = nil
+                                    saveContext()
+                                }
+                                .tint(.gray)
+                                Button("Red") {
+                                    participant.team = .Red
+                                    saveContext()
+                                }
+                                .tint(.red)
+                            }
                     }
                 }
 
@@ -33,6 +59,18 @@ struct TeamsView: View {
                         Text(participant.player.name)
                             .font(.body)
                             .padding(.vertical, 5)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button("Black") {
+                                    participant.team = .Black
+                                    saveContext()
+                                }
+                                .tint(.black)
+                                Button("Red") {
+                                    participant.team = .Red
+                                    saveContext()
+                                }
+                                .tint(.red)
+                            }
                     }
                 }
             }
@@ -66,7 +104,17 @@ struct TeamsView: View {
                 .foregroundColor(color)
         }
     }
+    
+    /// Save changes to SwiftData
+    private func saveContext() {
+        do {
+            try context.save()
+        } catch {
+            print("Failed to save context: \(error)")
+        }
+    }
 }
+
 
 struct TeamMemberRow: View {
     let name: String
