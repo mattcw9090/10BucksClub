@@ -117,7 +117,7 @@ struct TeamsView: View {
                 .padding([.horizontal, .top], 10)
                 
                 Button(action: {
-                    if validateTeams() {
+                    if true {
                         let logic = Logic()
                         
                         if let redLineup = logic.runExampleWithRetries(
@@ -133,14 +133,27 @@ struct TeamsView: View {
                             print("Red Lineup: \(redLineup)")
                             print("Black Lineup: \(blackLineup)")
                             
+                            // Create the overall lineup
+                            var overallLineup: [[[(Int, Int)]]] = []
+                            
+                            for i in 0..<redLineup.count {
+                                var matchWave: [[(Int, Int)]] = []
+                                
+                                for j in 0..<redLineup[i].count {
+                                    let redTuple = redLineup[i][j]
+                                    let blackTuple = blackLineup[i][j]
+                                    matchWave.append([redTuple, blackTuple])
+                                }
+                                
+                                overallLineup.append(matchWave)
+                            }
+                            
+                            print("Overall Lineup: \(overallLineup)")
+                            
                             deleteExistingDoublesMatches()
                             
-                            // MARK: - Add New Doubles Matches Based on New Lineups
-                            // TODO: Implement the logic to create and insert new DoublesMatch records
-                            // Example:
-                            // createDoublesMatches(from: redLineup, team: .Red)
-                            // createDoublesMatches(from: blackLineup, team: .Black)
-                            
+                            // Add New Doubles Matches Based on New Lineups
+                            // createDoublesMatches(from: overallLineup)
                         } else {
                             print("No valid lineup found after 10 attempts for one or both lineups.")
                         }
