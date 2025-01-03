@@ -17,9 +17,14 @@ struct TeamsView: View {
     @State private var selectedNumberOfCourts: Int = 2
     
     @Query private var allParticipants: [SessionParticipants]
+    @Query private var allDoublesMatches: [DoublesMatch]
     
     private var participants: [SessionParticipants] {
         allParticipants.filter { $0.session == session }
+    }
+    
+    private var doublesMatches: [DoublesMatch] {
+        allDoublesMatches.filter { $0.session == session }
     }
 
     var body: some View {
@@ -127,6 +132,8 @@ struct TeamsView: View {
                                         ) {
                             print(redLineup)
                             print(blackLineup)
+                            // delete all records of doubles matches filtered to this session
+                            // add records of doubles matches based on this red and black line up
                         } else {
                             print("No valid lineup found after 10 attempts for one or both lineups.")
                         }
