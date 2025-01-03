@@ -84,10 +84,12 @@ struct TeamsView: View {
                 }
                 .listStyle(InsetGroupedListStyle())
 
-                // Generate Draws Button
                 Button(action: {
                     if validateTeams() {
-                        alertMessage = AlertMessage(message: "Draws generated")
+                        let logic = Logic()
+                        logic.runExampleWithRetries(maxTries: 10)
+
+                        alertMessage = AlertMessage(message: "Done trying draws. Check console for details.")
                     }
                 }) {
                     Text("Generate Draws")
@@ -100,7 +102,11 @@ struct TeamsView: View {
                         .padding()
                 }
                 .alert(item: $alertMessage) { message in
-                    Alert(title: Text("Validation Result"), message: Text(message.message), dismissButton: .default(Text("OK")))
+                    Alert(
+                        title: Text("Validation Result"),
+                        message: Text(message.message),
+                        dismissButton: .default(Text("OK"))
+                    )
                 }
             }
         }
