@@ -13,6 +13,9 @@ struct TeamsView: View {
     
     @State private var alertMessage: AlertMessage?
     
+    @State private var selectedNumberOfWaves: Int = 5
+    @State private var selectedNumberOfCourts: Int = 2
+    
     @Query private var allParticipants: [SessionParticipants]
     
     private var participants: [SessionParticipants] {
@@ -83,11 +86,45 @@ struct TeamsView: View {
                     }
                 }
                 .listStyle(InsetGroupedListStyle())
+                
+                // MARK: - Dropdowns for Number of Waves and Courts
+                HStack(spacing: 20) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Waves")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        Picker("Number of Waves", selection: $selectedNumberOfWaves) {
+                            ForEach(1...10, id: \.self) { number in
+                                Text("\(number)").tag(number)
+                            }
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        .labelsHidden()
+                    }
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Courts")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        Picker("Number of Courts", selection: $selectedNumberOfCourts) {
+                            ForEach(1...10, id: \.self) { number in
+                                Text("\(number)").tag(number)
+                            }
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        .labelsHidden()
+                    }
+                }
+                .padding([.horizontal, .top], 10)
 
                 Button(action: {
                     if validateTeams() {
                         let logic = Logic()
-                        logic.runExampleWithRetries(teamMembers: [1, 2, 3, 4, 5, 6, 7], numberOfWaves: 5, numberOfCourts: 2)
+                        logic.runExampleWithRetries(
+                            teamMembers: [1, 2, 3, 4, 5, 6, 7],
+                            numberOfWaves: selectedNumberOfWaves,
+                            numberOfCourts: selectedNumberOfCourts
+                        )
 
                         alertMessage = AlertMessage(message: "Done trying draws. Check console for details.")
                     }
