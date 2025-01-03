@@ -28,17 +28,15 @@ struct TeamsView: View {
                 List {
                     // Red Team Section
                     Section(header: teamHeader(text: "Red Team", color: .red)) {
-                        ForEach(redTeamMembers, id: \.compositeKey) { participant in
-                            TeamMemberRow(name: participant.player.name, team: .Red)
+                        ForEach(redTeamMembers, id: \.id) { player in
+                            TeamMemberRow(name: player.name, team: .Red)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button("Unassign") {
-                                        participant.team = nil
-                                        saveContext()
+                                        updateTeam(for: player, to: nil)
                                     }
                                     .tint(.gray)
                                     Button("Black") {
-                                        participant.team = .Black
-                                        saveContext()
+                                        updateTeam(for: player, to: .Black)
                                     }
                                     .tint(.black)
                                 }
@@ -47,17 +45,15 @@ struct TeamsView: View {
 
                     // Black Team Section
                     Section(header: teamHeader(text: "Black Team", color: .black)) {
-                        ForEach(blackTeamMembers, id: \.compositeKey) { participant in
-                            TeamMemberRow(name: participant.player.name, team: .Black)
+                        ForEach(blackTeamMembers, id: \.id) { player in
+                            TeamMemberRow(name: player.name, team: .Black)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button("Unassign") {
-                                        participant.team = nil
-                                        saveContext()
+                                        updateTeam(for: player, to: nil)
                                     }
                                     .tint(.gray)
                                     Button("Red") {
-                                        participant.team = .Red
-                                        saveContext()
+                                        updateTeam(for: player, to: .Red)
                                     }
                                     .tint(.red)
                                 }
@@ -66,19 +62,17 @@ struct TeamsView: View {
 
                     // Unassigned Section
                     Section(header: teamHeader(text: "Unassigned", color: .gray)) {
-                        ForEach(unassignedMembers, id: \.compositeKey) { participant in
-                            Text(participant.player.name)
+                        ForEach(unassignedMembers, id: \.id) { player in
+                            Text(player.name)
                                 .font(.body)
                                 .padding(.vertical, 5)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button("Black") {
-                                        participant.team = .Black
-                                        saveContext()
+                                        updateTeam(for: player, to: .Black)
                                     }
                                     .tint(.black)
                                     Button("Red") {
-                                        participant.team = .Red
-                                        saveContext()
+                                        updateTeam(for: player, to: .Red)
                                     }
                                     .tint(.red)
                                 }
@@ -151,16 +145,16 @@ struct TeamsView: View {
     
     // MARK: - Computed Arrays
     
-    private var redTeamMembers: [SessionParticipants] {
-        participants.filter { $0.team == .Red }
+    private var redTeamMembers: [Player] {
+        participants.filter { $0.team == .Red }.map { $0.player }
     }
 
-    private var blackTeamMembers: [SessionParticipants] {
-        participants.filter { $0.team == .Black }
+    private var blackTeamMembers: [Player] {
+        participants.filter { $0.team == .Black }.map { $0.player }
     }
-    
-    private var unassignedMembers: [SessionParticipants] {
-        participants.filter { $0.team == nil }
+
+    private var unassignedMembers: [Player] {
+        participants.filter { $0.team == nil }.map { $0.player }
     }
 
     // MARK: - Validation
@@ -190,7 +184,13 @@ struct TeamsView: View {
     }
 
     // MARK: - UI Helpers
-
+    
+    private func updateTeam(for player: Player, to team: Team?) {
+        guard let participant = participants.first(where: { $0.player == player }) else { return }
+        participant.team = team
+        saveContext()
+    }
+    
     private func teamHeader(text: String, color: Color) -> some View {
         HStack {
             Circle()
