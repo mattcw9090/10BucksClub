@@ -5,7 +5,6 @@ struct MatchPair: Hashable {
     let b: Int
     
     init(_ x: Int, _ y: Int) {
-        // Always store lower value in `a` for consistent hashing
         if x < y {
             a = x
             b = y
@@ -13,6 +12,10 @@ struct MatchPair: Hashable {
             a = y
             b = x
         }
+    }
+    
+    var asTuple: (Int, Int) {
+        return (a, b)
     }
 }
 
@@ -272,23 +275,16 @@ class Logic {
     /// Tries up to `maxTries` to get a valid lineup.
     /// If it succeeds, it prints the results and stops.
     /// If it fails all attempts, it prints "No valid lineup found."
-    func runExampleWithRetries(numberOfPlayers: Int, numberOfWaves: Int, numberOfCourts: Int, maxTries: Int = 10) {
+    func runExampleWithRetries(numberOfPlayers: Int, numberOfWaves: Int, numberOfCourts: Int, maxTries: Int = 10) -> [[(Int, Int)]]? {
         for _ in 1...maxTries {
             let result = runOnce(numberOfPlayers: numberOfPlayers, numberOfWaves: numberOfWaves, numberOfCourts: numberOfCourts)
-            if result.success {
-                // Print the success results
-                if let lineup = result.lineup {
-                    for (idx, wave) in lineup.enumerated() {
-                        let waveStr = wave.map { "(\($0.a), \($0.b))" }.joined(separator: ", ")
-                        print("Wave \(idx + 1): [\(waveStr)]")
-                    }
-                    print("\nMatch Count")
-                    print(result.matchCount)
+            if result.success, let lineup = result.lineup {
+                let formattedLineup = lineup.map { wave in
+                    wave.map { $0.asTuple }
                 }
-                return // stop after first success
+                return formattedLineup
             }
         }
-        // If we are here, all attempts failed
-        print("No valid lineup found after \(maxTries) attempts.")
+        return nil // If all attempts fail
     }
 }
