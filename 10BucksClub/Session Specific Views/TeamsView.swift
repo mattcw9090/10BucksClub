@@ -115,7 +115,7 @@ struct TeamsView: View {
                     }
                 }
                 .padding([.horizontal, .top], 10)
-
+                
                 Button(action: {
                     if validateTeams() {
                         let logic = Logic()
@@ -130,14 +130,22 @@ struct TeamsView: View {
                                             numberOfWaves: selectedNumberOfWaves,
                                             numberOfCourts: selectedNumberOfCourts
                                         ) {
-                            print(redLineup)
-                            print(blackLineup)
-                            // delete all records of doubles matches filtered to this session
-                            // add records of doubles matches based on this red and black line up
+                            print("Red Lineup: \(redLineup)")
+                            print("Black Lineup: \(blackLineup)")
+                            
+                            deleteExistingDoublesMatches()
+                            
+                            // MARK: - Add New Doubles Matches Based on New Lineups
+                            // TODO: Implement the logic to create and insert new DoublesMatch records
+                            // Example:
+                            // createDoublesMatches(from: redLineup, team: .Red)
+                            // createDoublesMatches(from: blackLineup, team: .Black)
+                            
                         } else {
                             print("No valid lineup found after 10 attempts for one or both lineups.")
                         }
                         
+                        // Show alert indicating the process is complete
                         alertMessage = AlertMessage(message: "Done trying draws. Check console for details.")
                     }
                 }) {
@@ -207,6 +215,16 @@ struct TeamsView: View {
         guard let participant = participants.first(where: { $0.player == player }) else { return }
         participant.team = team
         saveContext()
+    }
+    
+    private func deleteExistingDoublesMatches() {
+        for match in doublesMatches {
+            context.delete(match)
+        }
+        
+        saveContext()
+        
+        print("All existing DoublesMatch records for this session have been deleted.")
     }
     
     private func teamHeader(text: String, color: Color) -> some View {
