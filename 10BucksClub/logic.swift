@@ -288,3 +288,56 @@ class Logic {
         return nil // If all attempts fail
     }
 }
+
+extension Logic {
+    /// Generates two lineups (red & black) each with `numberOfPlayers` players,
+    /// then combines them into an overall lineup. Returns `nil` if either fails.
+    func generateCombinedLineup(
+        numberOfPlayersPerTeam: Int,
+        numberOfWaves: Int,
+        numberOfCourts: Int,
+        maxTries: Int = 10
+    ) -> [[[(Int, Int)]]]? {
+        
+        // 1) Generate Red lineup
+        guard let redLineup = runExampleWithRetries(
+            numberOfPlayers: numberOfPlayersPerTeam,
+            numberOfWaves: numberOfWaves,
+            numberOfCourts: numberOfCourts,
+            maxTries: maxTries
+        ) else {
+            print("No valid redLineup found after \(maxTries) attempts.")
+            return nil
+        }
+        
+        // 2) Generate Black lineup
+        guard let blackLineup = runExampleWithRetries(
+            numberOfPlayers: numberOfPlayersPerTeam,
+            numberOfWaves: numberOfWaves,
+            numberOfCourts: numberOfCourts,
+            maxTries: maxTries
+        ) else {
+            print("No valid blackLineup found after \(maxTries) attempts.")
+            return nil
+        }
+        
+        // 3) Combine them
+        // Make sure redLineup.count == blackLineup.count
+        // They should, if they’re generated with the same waves & courts.
+        var overallLineup: [[[(Int, Int)]]] = []
+        
+        for i in 0..<redLineup.count {
+            var matchWave: [[(Int, Int)]] = []
+            
+            for j in 0..<redLineup[i].count {
+                let redTuple = redLineup[i][j]
+                let blackTuple = blackLineup[i][j]
+                matchWave.append([redTuple, blackTuple])
+            }
+            
+            overallLineup.append(matchWave)
+        }
+        
+        return overallLineup
+    }
+}

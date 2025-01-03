@@ -117,48 +117,20 @@ struct TeamsView: View {
                 .padding([.horizontal, .top], 10)
                 
                 Button(action: {
-                    if true {
+                    if validateTeams() {
                         let logic = Logic()
                         
-                        if let redLineup = logic.runExampleWithRetries(
-                                            numberOfPlayers: 6,
-                                            numberOfWaves: selectedNumberOfWaves,
-                                            numberOfCourts: selectedNumberOfCourts
-                                        ),
-                           let blackLineup = logic.runExampleWithRetries(
-                                            numberOfPlayers: 6,
-                                            numberOfWaves: selectedNumberOfWaves,
-                                            numberOfCourts: selectedNumberOfCourts
-                                        ) {
-                            print("Red Lineup: \(redLineup)")
-                            print("Black Lineup: \(blackLineup)")
-                            
-                            // Create the overall lineup
-                            var overallLineup: [[[(Int, Int)]]] = []
-                            
-                            for i in 0..<redLineup.count {
-                                var matchWave: [[(Int, Int)]] = []
-                                
-                                for j in 0..<redLineup[i].count {
-                                    let redTuple = redLineup[i][j]
-                                    let blackTuple = blackLineup[i][j]
-                                    matchWave.append([redTuple, blackTuple])
-                                }
-                                
-                                overallLineup.append(matchWave)
-                            }
-                            
+                        if let overallLineup = logic.generateCombinedLineup(
+                            numberOfPlayersPerTeam: 6,
+                            numberOfWaves: selectedNumberOfWaves,
+                            numberOfCourts: selectedNumberOfCourts
+                        ) {
                             print("Overall Lineup: \(overallLineup)")
-                            
                             deleteExistingDoublesMatches()
-                            
-                            // Add New Doubles Matches Based on New Lineups
                             // createDoublesMatches(from: overallLineup)
                         } else {
-                            print("No valid lineup found after 10 attempts for one or both lineups.")
+                            print("No valid lineup found after 10 attempts for red or black.")
                         }
-                        
-                        // Show alert indicating the process is complete
                         alertMessage = AlertMessage(message: "Done trying draws. Check console for details.")
                     }
                 }) {
