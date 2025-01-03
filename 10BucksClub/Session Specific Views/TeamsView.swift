@@ -127,7 +127,25 @@ struct TeamsView: View {
                         ) {
                             print("Overall Lineup: \(overallLineup)")
                             deleteExistingDoublesMatches()
-                            // createDoublesMatches(from: overallLineup)
+                            
+                            for (waveIndex, wave) in overallLineup.enumerated() {
+                                for match in wave {
+                                    let firstPair = match[0]
+                                    let secondPair = match[1]
+                                    
+                                    let newMatch = DoublesMatch(
+                                        session: session,
+                                        waveNumber: waveIndex + 1,
+                                        player1: redTeamMembers[firstPair.0 - 1],
+                                        player2: redTeamMembers[firstPair.1 - 1],
+                                        player3: blackTeamMembers[secondPair.0 - 1],
+                                        player4: blackTeamMembers[secondPair.1 - 1]
+                                    )
+                                    
+                                    context.insert(newMatch)
+                                }
+                            }
+                            
                         } else {
                             print("No valid lineup found after 10 attempts for red or black.")
                         }
