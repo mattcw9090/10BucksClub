@@ -87,7 +87,7 @@ struct TeamsView: View {
                 Button(action: {
                     if validateTeams() {
                         let logic = Logic()
-                        logic.runExampleWithRetries(maxTries: 10)
+                        logic.runExampleWithRetries(teamMembers: [1, 2, 3, 4, 5, 6, 7], numberOfWaves: 5, numberOfCourts: 2)
 
                         alertMessage = AlertMessage(message: "Done trying draws. Check console for details.")
                     }

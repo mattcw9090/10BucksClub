@@ -183,16 +183,16 @@ func groupMatches(_ tuples: Set<MatchPair>, _ k: Int) -> [[MatchPair]]? {
 
 
 class Logic {
-    /// Attempts a single run (like your original runExample) and returns a tuple:
+    /// Attempts a single run with given parameters and returns a tuple:
     /// - success: bool
     /// - lineup: optional array of waves
     /// - matchCount: dictionary of usage
     ///
-    /// That way, we can loop multiple times if needed.
-    func runOnce() -> (success: Bool, lineup: [[MatchPair]]?, matchCount: [Int: Int]) {
-        let teamMembers = [1, 2, 3, 4, 5, 6]
-        let numberOfWaves = 5
-        let numberOfCourts = 2
+    /// Parameters:
+    /// - teamMembers: Array of team member IDs.
+    /// - numberOfWaves: Number of waves.
+    /// - numberOfCourts: Number of courts per wave.
+    func runOnce(teamMembers: [Int], numberOfWaves: Int, numberOfCourts: Int) -> (success: Bool, lineup: [[MatchPair]]?, matchCount: [Int: Int]) {
         let numberOfMatches = numberOfWaves * numberOfCourts
 
         // All possible pairs
@@ -269,9 +269,9 @@ class Logic {
     /// Tries up to `maxTries` to get a valid lineup.
     /// If it succeeds, it prints the results and stops.
     /// If it fails all attempts, it prints "No valid lineup found."
-    func runExampleWithRetries(maxTries: Int = 10) {
+    func runExampleWithRetries(teamMembers: [Int], numberOfWaves: Int, numberOfCourts: Int, maxTries: Int = 10) {
         for _ in 1...maxTries {
-            let result = runOnce()
+            let result = runOnce(teamMembers: teamMembers, numberOfWaves: numberOfWaves, numberOfCourts: numberOfCourts)
             if result.success {
                 // Print the success results
                 if let lineup = result.lineup {
