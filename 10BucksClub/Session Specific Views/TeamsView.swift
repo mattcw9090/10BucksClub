@@ -114,14 +114,21 @@ struct TeamsView: View {
                 Button(action: {
                     if validateTeams() {
                         let logic = Logic()
-                        if let lineup = logic.runExampleWithRetries(
-                            numberOfPlayers: 6,
-                            numberOfWaves: selectedNumberOfWaves,
-                            numberOfCourts: selectedNumberOfCourts
-                        ) {
-                            print(lineup)
+                        
+                        if let redLineup = logic.runExampleWithRetries(
+                                            numberOfPlayers: 6,
+                                            numberOfWaves: selectedNumberOfWaves,
+                                            numberOfCourts: selectedNumberOfCourts
+                                        ),
+                           let blackLineup = logic.runExampleWithRetries(
+                                            numberOfPlayers: 6,
+                                            numberOfWaves: selectedNumberOfWaves,
+                                            numberOfCourts: selectedNumberOfCourts
+                                        ) {
+                            print(redLineup)
+                            print(blackLineup)
                         } else {
-                            print("No valid lineup found after 10 attempts.")
+                            print("No valid lineup found after 10 attempts for one or both lineups.")
                         }
                         
                         alertMessage = AlertMessage(message: "Done trying draws. Check console for details.")
