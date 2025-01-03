@@ -112,10 +112,10 @@ struct TeamsView: View {
                 .padding([.horizontal, .top], 10)
 
                 Button(action: {
-                    if validateTeams() {
+                    if true {
                         let logic = Logic()
                         logic.runExampleWithRetries(
-                            teamMembers: [1, 2, 3, 4, 5, 6, 7],
+                            numberOfPlayers: 6,
                             numberOfWaves: selectedNumberOfWaves,
                             numberOfCourts: selectedNumberOfCourts
                         )

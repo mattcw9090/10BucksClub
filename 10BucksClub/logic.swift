@@ -189,11 +189,14 @@ class Logic {
     /// - matchCount: dictionary of usage
     ///
     /// Parameters:
-    /// - teamMembers: Array of team member IDs.
+    /// - numberOfPlayers: Total number of players.
     /// - numberOfWaves: Number of waves.
     /// - numberOfCourts: Number of courts per wave.
-    func runOnce(teamMembers: [Int], numberOfWaves: Int, numberOfCourts: Int) -> (success: Bool, lineup: [[MatchPair]]?, matchCount: [Int: Int]) {
+    func runOnce(numberOfPlayers: Int, numberOfWaves: Int, numberOfCourts: Int) -> (success: Bool, lineup: [[MatchPair]]?, matchCount: [Int: Int]) {
         let numberOfMatches = numberOfWaves * numberOfCourts
+
+        // Generate teamMembers array from 1 to numberOfPlayers
+        let teamMembers = Array(1...numberOfPlayers)
 
         // All possible pairs
         var allCombos = allCombinations(of: teamMembers)
@@ -269,9 +272,9 @@ class Logic {
     /// Tries up to `maxTries` to get a valid lineup.
     /// If it succeeds, it prints the results and stops.
     /// If it fails all attempts, it prints "No valid lineup found."
-    func runExampleWithRetries(teamMembers: [Int], numberOfWaves: Int, numberOfCourts: Int, maxTries: Int = 10) {
+    func runExampleWithRetries(numberOfPlayers: Int, numberOfWaves: Int, numberOfCourts: Int, maxTries: Int = 10) {
         for _ in 1...maxTries {
-            let result = runOnce(teamMembers: teamMembers, numberOfWaves: numberOfWaves, numberOfCourts: numberOfCourts)
+            let result = runOnce(numberOfPlayers: numberOfPlayers, numberOfWaves: numberOfWaves, numberOfCourts: numberOfCourts)
             if result.success {
                 // Print the success results
                 if let lineup = result.lineup {
