@@ -32,10 +32,10 @@ struct DrawsView: View {
         let score = anyPoints ? "\(doublesMatch.redTeamScoreFirstSet)-\(doublesMatch.blackTeamScoreFirstSet), \(doublesMatch.redTeamScoreSecondSet)-\(doublesMatch.blackTeamScoreSecondSet)" : nil
 
         return Match(
-            name1: doublesMatch.player1.name,
-            name2: doublesMatch.player2.name,
-            name3: doublesMatch.player3.name,
-            name4: doublesMatch.player4.name,
+            name1: doublesMatch.redPlayer1.name,
+            name2: doublesMatch.redPlayer2.name,
+            name3: doublesMatch.blackPlayer1.name,
+            name4: doublesMatch.blackPlayer2.name,
             isCompleted: anyPoints,
             winningTeam: anyPoints ? winningTeam : nil,
             score: score
@@ -173,28 +173,28 @@ struct MatchView: View {
         let match1 = DoublesMatch(
             session: session,
             waveNumber: 1,
-            player1: players[0],
-            player2: players[1],
-            player3: players[2],
-            player4: players[3],
+            redPlayer1: players[0],
+            redPlayer2: players[1],
+            blackPlayer1: players[2],
+            blackPlayer2: players[3],
             redTeamScoreFirstSet: 21,
             blackTeamScoreFirstSet: 15
         )
         let match2 = DoublesMatch(
             session: session,
             waveNumber: 1,
-            player1: players[4],
-            player2: players[5],
-            player3: players[2],
-            player4: players[3]
+            redPlayer1: players[4],
+            redPlayer2: players[5],
+            blackPlayer1: players[2],
+            blackPlayer2: players[3]
         )
         let match3 = DoublesMatch(
             session: session,
             waveNumber: 2,
-            player1: players[1],
-            player2: players[0],
-            player3: players[2],
-            player4: players[3],
+            redPlayer1: players[1],
+            redPlayer2: players[0],
+            blackPlayer1: players[2],
+            blackPlayer2: players[3],
             redTeamScoreFirstSet: 18,
             blackTeamScoreFirstSet: 21
         )

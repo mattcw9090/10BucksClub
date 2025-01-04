@@ -136,10 +136,10 @@ struct TeamsView: View {
                                     let newMatch = DoublesMatch(
                                         session: session,
                                         waveNumber: waveIndex + 1,
-                                        player1: redTeamMembers[firstPair.0 - 1],
-                                        player2: redTeamMembers[firstPair.1 - 1],
-                                        player3: blackTeamMembers[secondPair.0 - 1],
-                                        player4: blackTeamMembers[secondPair.1 - 1]
+                                        redPlayer1: redTeamMembers[firstPair.0 - 1],
+                                        redPlayer2: redTeamMembers[firstPair.1 - 1],
+                                        blackPlayer1: blackTeamMembers[secondPair.0 - 1],
+                                        blackPlayer2: blackTeamMembers[secondPair.1 - 1]
                                     )
                                     
                                     context.insert(newMatch)

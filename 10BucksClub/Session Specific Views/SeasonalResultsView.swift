@@ -61,7 +61,7 @@ struct SeasonalResultsView: View {
             let blackMinusRed = (match.blackTeamScoreFirstSet + match.blackTeamScoreSecondSet) -
                                 (match.redTeamScoreFirstSet + match.redTeamScoreSecondSet)
 
-            let playersInMatch = [match.player1, match.player2, match.player3, match.player4]
+            let playersInMatch = [match.redPlayer1, match.redPlayer2, match.blackPlayer1, match.blackPlayer2]
 
             playersInMatch.forEach { matchPlayer in
                 guard let participant = allParticipants.first(where: {
@@ -189,10 +189,10 @@ struct SeasonalResultsView: View {
             DoublesMatch(
                 session: sessions[0],
                 waveNumber: 1,
-                player1: players[0],
-                player2: players[1],
-                player3: players[2],
-                player4: players[3],
+                redPlayer1: players[0],
+                redPlayer2: players[1],
+                blackPlayer1: players[2],
+                blackPlayer2: players[3],
                 redTeamScoreFirstSet: 21,
                 blackTeamScoreFirstSet: 15,
                 isComplete: true
@@ -200,19 +200,19 @@ struct SeasonalResultsView: View {
             DoublesMatch(
                 session: sessions[1],
                 waveNumber: 1,
-                player1: players[1],
-                player2: players[0],
-                player3: players[2],
-                player4: players[3],
+                redPlayer1: players[1],
+                redPlayer2: players[0],
+                blackPlayer1: players[2],
+                blackPlayer2: players[3],
                 isComplete: false
             ),
             DoublesMatch(
                 session: sessions[0],
                 waveNumber: 2,
-                player1: players[1],
-                player2: players[0],
-                player3: players[2],
-                player4: players[3],
+                redPlayer1: players[1],
+                redPlayer2: players[0],
+                blackPlayer1: players[2],
+                blackPlayer2: players[3],
                 redTeamScoreFirstSet: 18,
                 blackTeamScoreFirstSet: 22,
                 isComplete: true
