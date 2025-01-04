@@ -32,10 +32,10 @@ struct DrawsView: View {
         let score = anyPoints ? "\(doublesMatch.redTeamScoreFirstSet)-\(doublesMatch.blackTeamScoreFirstSet), \(doublesMatch.redTeamScoreSecondSet)-\(doublesMatch.blackTeamScoreSecondSet)" : nil
 
         return Match(
-            name1: doublesMatch.redPlayer1.name,
-            name2: doublesMatch.redPlayer2.name,
-            name3: doublesMatch.blackPlayer1.name,
-            name4: doublesMatch.blackPlayer2.name,
+            redPlayerName1: doublesMatch.redPlayer1.name,
+            redPlayerName2: doublesMatch.redPlayer2.name,
+            blackPlayerName1: doublesMatch.blackPlayer1.name,
+            blackPlayerName2: doublesMatch.blackPlayer2.name,
             isCompleted: anyPoints,
             winningTeam: anyPoints ? winningTeam : nil,
             score: score
@@ -55,10 +55,10 @@ struct WaveView: View {
 
             ForEach(matches) { match in
                 MatchView(
-                    name1: match.name1,
-                    name2: match.name2,
-                    name3: match.name3,
-                    name4: match.name4,
+                    name1: match.redPlayerName1,
+                    name2: match.redPlayerName2,
+                    name3: match.blackPlayerName1,
+                    name4: match.blackPlayerName2,
                     isCompleted: match.isCompleted,
                     winningTeam: match.winningTeam,
                     score: match.score
@@ -70,10 +70,10 @@ struct WaveView: View {
 
 struct Match: Identifiable {
     let id = UUID()
-    let name1: String
-    let name2: String
-    let name3: String
-    let name4: String
+    let redPlayerName1: String
+    let redPlayerName2: String
+    let blackPlayerName1: String
+    let blackPlayerName2: String
     let isCompleted: Bool
     let winningTeam: Team?
     let score: String?
